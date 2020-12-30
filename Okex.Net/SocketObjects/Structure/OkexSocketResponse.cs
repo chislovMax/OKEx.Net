@@ -1,14 +1,13 @@
 ﻿using CryptoExchange.Net.Attributes;
-using CryptoExchange.Net.Converters;
 using Newtonsoft.Json;
 using Okex.Net.Converters;
+using Okex.Net.Enums;
 using Okex.Net.RestObjects;
-using System;
 using System.Collections.Generic;
 
 namespace Okex.Net.SocketObjects.Structure
 {
-    internal class OkexSocketResponse
+    public class OkexSocketResponse
     {
         [JsonProperty("event")]
         internal string Event { get; set; } = "";
@@ -29,7 +28,7 @@ namespace Okex.Net.SocketObjects.Structure
         internal string ErrorMessage { get; set; } = "";
     }
 
-    internal class OkexSocketLoginResponse : OkexSocketResponse
+    public class OkexSocketLoginResponse : OkexSocketResponse
     {
         [JsonProperty("success")]
         internal bool Success { get; set; }
@@ -51,15 +50,51 @@ namespace Okex.Net.SocketObjects.Structure
         public T Data { get; set; } = default!;
     }
 
-    internal class OkexSocketOrderBookUpdate
+    internal class OkexSpotOrderBookUpdate
     {
         [JsonProperty("table")]
         internal string Table { get; set; } = "";
 
-        [JsonProperty("action"), JsonOptionalProperty, JsonConverter(typeof(SpotOrderBookDataTypeConverter))]
-        internal OkexSpotOrderBookDataType DataType { get; set; }
+        [JsonProperty("action"), JsonOptionalProperty, JsonConverter(typeof(OrderBookDataTypeConverter))]
+        internal OkexOrderBookDataType DataType { get; set; }
 
         [JsonProperty("data")]
         public IEnumerable<OkexSpotOrderBook> Data { get; set; } = default!;
+    }
+
+    internal class OkexFuturesOrderBookUpdate
+    {
+        [JsonProperty("table")]
+        internal string Table { get; set; } = "";
+
+        [JsonProperty("action"), JsonOptionalProperty, JsonConverter(typeof(OrderBookDataTypeConverter))]
+        internal OkexOrderBookDataType DataType { get; set; }
+
+        [JsonProperty("data")]
+        public IEnumerable<OkexFuturesOrderBook> Data { get; set; } = default!;
+    }
+
+    internal class OkexSwapOrderBookUpdate
+    {
+        [JsonProperty("table")]
+        internal string Table { get; set; } = "";
+
+        [JsonProperty("action"), JsonOptionalProperty, JsonConverter(typeof(OrderBookDataTypeConverter))]
+        internal OkexOrderBookDataType DataType { get; set; }
+
+        [JsonProperty("data")]
+        public IEnumerable<OkexSwapOrderBook> Data { get; set; } = default!;
+    }
+
+    internal class OkexOptionsOrderBookUpdate
+    {
+        [JsonProperty("table")]
+        internal string Table { get; set; } = "";
+
+        [JsonProperty("action"), JsonOptionalProperty, JsonConverter(typeof(OrderBookDataTypeConverter))]
+        internal OkexOrderBookDataType DataType { get; set; }
+
+        [JsonProperty("data")]
+        public IEnumerable<OkexOptionsOrderBook> Data { get; set; } = default!;
     }
 }
