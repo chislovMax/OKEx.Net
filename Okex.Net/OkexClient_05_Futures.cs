@@ -1,4 +1,4 @@
-﻿using CryptoExchange.Net;
+using CryptoExchange.Net;
 using CryptoExchange.Net.Objects;
 using Newtonsoft.Json;
 using Okex.Net.Converters;
@@ -343,12 +343,12 @@ namespace Okex.Net
             {
                 { "instrument_id", symbol },
                 { "type", JsonConvert.SerializeObject(type, new FuturesOrderTypeConverter(false)) },
-                { "size", size },
-                { "match_price", match_price?1:0 },
+                { "size", size.ToString() },
+                { "match_price", match_price?"1":"0" },
                 { "order_type", JsonConvert.SerializeObject(timeInForce, new FuturesTimeInForceConverter(false)) },
             };
             parameters.AddOptionalParameter("client_oid", clientOrderId);
-            parameters.AddOptionalParameter("price", price);
+            parameters.AddOptionalParameter("price", price?.ToString());
 
             return await SendRequest<OkexFuturesPlacedOrder>(GetUrl(Endpoints_Futures_PlaceOrder), HttpMethod.Post, ct, parameters, signed: true).ConfigureAwait(false);
         }
