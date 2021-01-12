@@ -1,4 +1,4 @@
-﻿using CryptoExchange.Net;
+using CryptoExchange.Net;
 using CryptoExchange.Net.Objects;
 using Newtonsoft.Json;
 using Okex.Net.Converters;
@@ -380,16 +380,16 @@ namespace Okex.Net
 		/// </summary>
 		/// <param name="ct">Cancellation Token</param>
 		/// <returns></returns>
-		public WebCallResult<IEnumerable<OkexFundingUserId>> Funding_GetUserID(CancellationToken ct = default) => Funding_GetUserID_Async(ct).Result;
+		public WebCallResult<OkexFundingUserId> Funding_GetUserID(CancellationToken ct = default) => Funding_GetUserID_Async(ct).Result;
 		/// <summary>
 		/// Get the unique UID of the account。
 		/// Rate Limit: 1 requests per second
 		/// </summary>
 		/// <param name="ct">Cancellation Token</param>
 		/// <returns></returns>
-		public async Task<WebCallResult<IEnumerable<OkexFundingUserId>>> Funding_GetUserID_Async(CancellationToken ct = default)
+		public async Task<WebCallResult<OkexFundingUserId>> Funding_GetUserID_Async(CancellationToken ct = default)
 		{
-			return await SendRequest<IEnumerable<OkexFundingUserId>>(GetUrl(Endpoints_Funding_GetUserID), HttpMethod.Get, ct, signed: true).ConfigureAwait(false);
+			return await SendRequest<OkexFundingUserId>(GetUrl(Endpoints_Funding_GetUserID), HttpMethod.Get, ct, signed: true).ConfigureAwait(false);
 		}
 
 		/// <summary>

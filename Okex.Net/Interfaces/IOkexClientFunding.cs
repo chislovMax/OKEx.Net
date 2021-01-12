@@ -1,4 +1,4 @@
-﻿using CryptoExchange.Net.Objects;
+using CryptoExchange.Net.Objects;
 using Okex.Net.Enums;
 using Okex.Net.RestObjects;
 using System.Collections.Generic;
@@ -27,8 +27,8 @@ namespace Okex.Net.Interfaces
         Task<WebCallResult<IEnumerable<OkexFundingDepositDetails>>> Funding_GetDepositHistory_Async(CancellationToken ct = default);
         WebCallResult<OkexFundingSubAccount> Funding_GetSubAccount(string subAccountName, CancellationToken ct = default);
         Task<WebCallResult<OkexFundingSubAccount>> Funding_GetSubAccount_Async(string subAccountName, CancellationToken ct = default);
-        WebCallResult<IEnumerable<OkexFundingUserId>> Funding_GetUserID(CancellationToken ct = default);
-        Task<WebCallResult<IEnumerable<OkexFundingUserId>>> Funding_GetUserID_Async(CancellationToken ct = default);
+        WebCallResult<OkexFundingUserId> Funding_GetUserID(CancellationToken ct = default);
+        Task<WebCallResult<OkexFundingUserId>> Funding_GetUserID_Async(CancellationToken ct = default);
         WebCallResult<IEnumerable<OkexFundingWithdrawalFee>> Funding_GetWithdrawalFees(string? currency = null, CancellationToken ct = default);
         Task<WebCallResult<IEnumerable<OkexFundingWithdrawalFee>>> Funding_GetWithdrawalFees_Async(string? currency = null, CancellationToken ct = default);
         WebCallResult<IEnumerable<OkexFundingWithdrawalDetails>> Funding_GetWithdrawalHistory(CancellationToken ct = default);
