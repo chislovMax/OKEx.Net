@@ -328,6 +328,20 @@ namespace Okex.Net
 			return await Subscribe(request, null, true, internalHandler).ConfigureAwait(false);
 		}
 
+		public async Task<CallResult<UpdateSubscription>> Futures_SubscribeToPositions_Async(string[] symbols, Action<OkexFuturesPosition> onData)
+		{
+			var internalHandler = new Action<OkexSocketUpdateResponse<IEnumerable<OkexFuturesPosition>>>(data =>
+			{
+				foreach (var d in data.Data)
+					onData(d);
+			});
+
+			var channels = symbols.Select(symbol => $"futures/position:{symbol}").ToArray();
+
+			var request = new OkexSocketRequest(OkexSocketOperation.Subscribe, channels);
+			return await Subscribe(request, null, true, internalHandler).ConfigureAwait(false);
+		}
+
 		/// <summary>
 		/// Get the user's account information , require login.
 		/// </summary>
@@ -383,7 +397,6 @@ namespace Okex.Net
 
 		public async Task<CallResult<UpdateSubscription>> Futures_SubscribeToOrders_Async(string[] symbols, Action<OkexFuturesOrder> onData)
 		{
-
 			var internalHandler = new Action<OkexSocketUpdateResponse<IEnumerable<OkexFuturesOrder>>>(data =>
 			{
 				foreach (var d in data.Data)
