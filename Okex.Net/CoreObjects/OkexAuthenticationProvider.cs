@@ -1,4 +1,4 @@
-﻿using CryptoExchange.Net;
+using CryptoExchange.Net;
 using CryptoExchange.Net.Authentication;
 using CryptoExchange.Net.Objects;
 using Newtonsoft.Json;
@@ -58,7 +58,7 @@ namespace Okex.Net.CoreObjects
                 }
             }
 
-            var signature = OkexAuthenticationProvider.Base64Encode(encryptor.ComputeHash(Encoding.UTF8.GetBytes(signtext)));
+            var signature = Base64Encode(encryptor.ComputeHash(Encoding.UTF8.GetBytes(signtext)));
 
             return new Dictionary<string, string> {
                 { "OK-ACCESS-KEY", Credentials.Key.GetString() },
