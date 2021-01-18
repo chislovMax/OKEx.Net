@@ -1,4 +1,4 @@
-﻿using CryptoExchange.Net.Objects;
+using CryptoExchange.Net.Objects;
 using CryptoExchange.Net.Sockets;
 using Okex.Net.Enums;
 using Okex.Net.RestObjects;
@@ -11,6 +11,11 @@ namespace Okex.Net.Interfaces
     public interface IOkexSocketClientFutures
     {
         CallResult<UpdateSubscription> Futures_SubscribeToAlgoOrders(string symbol, Action<OkexFuturesAlgoOrder> onData);
+
+        Task<CallResult<UpdateSubscription>> Futures_SubscribeToOrders_Async(string[] symbols, Action<OkexFuturesOrder> onData);
+
+
+		  Task<CallResult<UpdateSubscription>> Futures_SubscribeToPositions_Async(string[] symbols, Action<OkexFuturesPosition> onData);
         Task<CallResult<UpdateSubscription>> Futures_SubscribeToAlgoOrders_Async(string symbol, Action<OkexFuturesAlgoOrder> onData);
         CallResult<UpdateSubscription> Futures_SubscribeToBalance(string symbol, Action<OkexFuturesBalance> onData);
         Task<CallResult<UpdateSubscription>> Futures_SubscribeToBalance_Async(string symbol, Action<OkexFuturesBalance> onData);

@@ -30,7 +30,7 @@ namespace Okex.Net
         /// <param name="instrument">Instrument ID, e.g. BTC-USD-190927-5000-C</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public WebCallResult<OkexOptionsPositions> Options_GetPositions(string underlying, string? instrument = null, CancellationToken ct = default) => Options_GetPositions_Async(underlying, instrument, ct).Result;
+        public virtual WebCallResult<OkexOptionsPositions> Options_GetPositions(string underlying, string? instrument = null, CancellationToken ct = default) => Options_GetPositions_Async(underlying, instrument, ct).Result;
         /// <summary>
         /// Retrieve the information on your option positions of an underlying.
         /// Rate Limit：20 Requests per 2 seconds
@@ -39,7 +39,7 @@ namespace Okex.Net
         /// <param name="instrument">Instrument ID, e.g. BTC-USD-190927-5000-C</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public async Task<WebCallResult<OkexOptionsPositions>> Options_GetPositions_Async(string underlying, string? instrument = null, CancellationToken ct = default)
+        public virtual async Task<WebCallResult<OkexOptionsPositions>> Options_GetPositions_Async(string underlying, string? instrument = null, CancellationToken ct = default)
         {
             var parameters = new Dictionary<string, object>();
             parameters.AddOptionalParameter("instrument_id", instrument);
@@ -54,7 +54,7 @@ namespace Okex.Net
         /// <param name="underlying">The underlying index that the contract is based upon, e.g. BTC-USD.</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public WebCallResult<OkexOptionsBalance> Options_GetBalances(string underlying, CancellationToken ct = default) => Options_GetBalances_Async(underlying, ct).Result;
+        public virtual WebCallResult<OkexOptionsBalance> Options_GetBalances(string underlying, CancellationToken ct = default) => Options_GetBalances_Async(underlying, ct).Result;
         /// <summary>
         /// Retrieve the options account information for a single underlying index.
         /// Rate Limit：20 Requests per 2 seconds
@@ -62,7 +62,7 @@ namespace Okex.Net
         /// <param name="underlying">The underlying index that the contract is based upon, e.g. BTC-USD.</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public async Task<WebCallResult<OkexOptionsBalance>> Options_GetBalances_Async(string underlying, CancellationToken ct = default)
+        public virtual async Task<WebCallResult<OkexOptionsBalance>> Options_GetBalances_Async(string underlying, CancellationToken ct = default)
         {
             return await SendRequest<OkexOptionsBalance>(GetUrl(Endpoints_Options_Account, underlying), HttpMethod.Get, ct, signed: true).ConfigureAwait(false);
         }
@@ -100,7 +100,7 @@ namespace Okex.Net
         /// <param name="clientOrderId">You can customize order IDs to identify your orders. The system supports alphabets + numbers(case-sensitive，e.g:A123、a123), or alphabets (case-sensitive，e.g:Abc、abc) only, between 1-32 characters.</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public WebCallResult<OkexOptionsPlacedOrder> Options_PlaceOrder(string instrument, OkexOptionsOrderSide side, decimal price, decimal size, OkexOptionsTimeInForce timeInForce = OkexOptionsTimeInForce.NormalOrder, bool match_price = false, string? clientOrderId = null, CancellationToken ct = default) => Options_PlaceOrder_Async(instrument, side, price, size, timeInForce, match_price, clientOrderId, ct).Result;
+        public virtual WebCallResult<OkexOptionsPlacedOrder> Options_PlaceOrder(string instrument, OkexOptionsOrderSide side, decimal price, decimal size, OkexOptionsTimeInForce timeInForce = OkexOptionsTimeInForce.NormalOrder, bool match_price = false, string? clientOrderId = null, CancellationToken ct = default) => Options_PlaceOrder_Async(instrument, side, price, size, timeInForce, match_price, clientOrderId, ct).Result;
         /// <summary>
         /// Places an order
         /// Rate Limit：20 Requests per second
@@ -134,7 +134,7 @@ namespace Okex.Net
         /// <param name="clientOrderId">You can customize order IDs to identify your orders. The system supports alphabets + numbers(case-sensitive，e.g:A123、a123), or alphabets (case-sensitive，e.g:Abc、abc) only, between 1-32 characters.</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public async Task<WebCallResult<OkexOptionsPlacedOrder>> Options_PlaceOrder_Async(string instrument, OkexOptionsOrderSide side, decimal price, decimal size, OkexOptionsTimeInForce timeInForce = OkexOptionsTimeInForce.NormalOrder, bool match_price = false, string? clientOrderId = null, CancellationToken ct = default)
+        public virtual async Task<WebCallResult<OkexOptionsPlacedOrder>> Options_PlaceOrder_Async(string instrument, OkexOptionsOrderSide side, decimal price, decimal size, OkexOptionsTimeInForce timeInForce = OkexOptionsTimeInForce.NormalOrder, bool match_price = false, string? clientOrderId = null, CancellationToken ct = default)
         {
             instrument = instrument.ValidateSymbol();
             clientOrderId?.ValidateStringLength("clientOrderId", 0, 32);
@@ -144,9 +144,9 @@ namespace Okex.Net
             var parameters = new Dictionary<string, object>
             {
                 { "instrument_id", instrument },
-                { "size", size },
-                { "price", price },
-                { "match_price", match_price ? 1 : 0 },
+                { "size", size.ToString(ci) },
+                { "price", price.ToString(ci) },
+                { "match_price", match_price ? "1" : "0" },
                 { "side", JsonConvert.SerializeObject(side, new OptionsOrderSideConverter(false)) },
                 { "order_type", JsonConvert.SerializeObject(timeInForce, new OptionsTimeInForceConverter(false)) },
             };
@@ -167,7 +167,7 @@ namespace Okex.Net
         /// <param name="orders">Orders List</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public WebCallResult<OkexOptionsBatchOrders> Options_BatchPlaceOrders(string underlying, IEnumerable<OkexOptionsPlaceOrder> orders, CancellationToken ct = default) => Options_BatchPlaceOrders_Async(underlying, orders, ct).Result;
+        public virtual WebCallResult<OkexOptionsBatchOrders> Options_BatchPlaceOrders(string underlying, IEnumerable<OkexOptionsPlaceOrder> orders, CancellationToken ct = default) => Options_BatchPlaceOrders_Async(underlying, orders, ct).Result;
         /// <summary>
         /// Place contract orders in a batch. Maximum 10 orders can be placed at a time for each underlying.
         /// Rate Limit：20 Requests per 2 seconds
@@ -180,7 +180,7 @@ namespace Okex.Net
         /// <param name="orders">Orders List</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public async Task<WebCallResult<OkexOptionsBatchOrders>> Options_BatchPlaceOrders_Async(string underlying, IEnumerable<OkexOptionsPlaceOrder> orders, CancellationToken ct = default)
+        public virtual async Task<WebCallResult<OkexOptionsBatchOrders>> Options_BatchPlaceOrders_Async(string underlying, IEnumerable<OkexOptionsPlaceOrder> orders, CancellationToken ct = default)
         {
             if (orders == null || orders.Count() == 0)
                 throw new ArgumentException("Orders cant be null or with zero-elements");
@@ -220,7 +220,7 @@ namespace Okex.Net
         /// <param name="clientOrderId">Either client_oid or order_id must be present. client_oid should be the same Client-supplied order ID when submitting the order. It should be comprised of alpha-numeric characters with length 1 to 32. Both uppercase and lowercase are supported.</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public WebCallResult<OkexOptionsPlacedOrder> Options_CancelOrder(string underlying, long? orderId = null, string? clientOrderId = null, CancellationToken ct = default) => Options_CancelOrder_Async(underlying, orderId, clientOrderId, ct).Result;
+        public virtual WebCallResult<OkexOptionsPlacedOrder> Options_CancelOrder(string underlying, long? orderId = null, string? clientOrderId = null, CancellationToken ct = default) => Options_CancelOrder_Async(underlying, orderId, clientOrderId, ct).Result;
         /// <summary>
         /// Cancel an unfilled order
         /// Rate Limit：20 Requests per second
@@ -236,7 +236,7 @@ namespace Okex.Net
         /// <param name="clientOrderId">Either client_oid or order_id must be present. client_oid should be the same Client-supplied order ID when submitting the order. It should be comprised of alpha-numeric characters with length 1 to 32. Both uppercase and lowercase are supported.</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public async Task<WebCallResult<OkexOptionsPlacedOrder>> Options_CancelOrder_Async(string underlying, long? orderId = null, string? clientOrderId = null, CancellationToken ct = default)
+        public virtual async Task<WebCallResult<OkexOptionsPlacedOrder>> Options_CancelOrder_Async(string underlying, long? orderId = null, string? clientOrderId = null, CancellationToken ct = default)
         {
             underlying = underlying.ValidateSymbol();
 
@@ -264,7 +264,7 @@ namespace Okex.Net
         /// <param name="clientOrderIds">Either client_oids or order_ids must be present. List of client_oid, which should be the same Client-supplied order ID when submitting the order. It should be comprised of alpha-numeric characters with length 1 to 32. Both uppercase and lowercase are supported.</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public WebCallResult<OkexOptionsBatchOrders> Options_BatchCancelOrders(string underlying, IEnumerable<long> orderIds, IEnumerable<string> clientOrderIds, CancellationToken ct = default) => Options_BatchCancelOrders_Async(underlying, orderIds, clientOrderIds, ct).Result;
+        public virtual WebCallResult<OkexOptionsBatchOrders> Options_BatchCancelOrders(string underlying, IEnumerable<string> orderIds, IEnumerable<string> clientOrderIds, CancellationToken ct = default) => Options_BatchCancelOrders_Async(underlying, orderIds, clientOrderIds, ct).Result;
         /// <summary>
         /// Batch cancel open orders; a maximum of 10 orders can be canceled at a time.
         /// Rate Limit：20 Requests per 2 seconds
@@ -280,7 +280,7 @@ namespace Okex.Net
         /// <param name="clientOrderIds">Either client_oids or order_ids must be present. List of client_oid, which should be the same Client-supplied order ID when submitting the order. It should be comprised of alpha-numeric characters with length 1 to 32. Both uppercase and lowercase are supported.</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public async Task<WebCallResult<OkexOptionsBatchOrders>> Options_BatchCancelOrders_Async(string underlying, IEnumerable<long> orderIds, IEnumerable<string> clientOrderIds, CancellationToken ct = default)
+        public virtual async Task<WebCallResult<OkexOptionsBatchOrders>> Options_BatchCancelOrders_Async(string underlying, IEnumerable<string> orderIds, IEnumerable<string> clientOrderIds, CancellationToken ct = default)
         {
             underlying = underlying.ValidateSymbol();
 
@@ -304,7 +304,7 @@ namespace Okex.Net
         /// <param name="underlying">The underlying index that the contract is based upon, e.g. BTC-USD.</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public WebCallResult<OkexOptionsResponse> Options_CancelAllOrders(string underlying, CancellationToken ct = default) => Options_CancelAllOrders_Async(underlying, ct).Result;
+        public virtual WebCallResult<OkexOptionsResponse> Options_CancelAllOrders(string underlying, CancellationToken ct = default) => Options_CancelAllOrders_Async(underlying, ct).Result;
         /// <summary>
         /// Cancel all pending orders placed on the same Underlying
         /// Rate Limit：1 Request per second
@@ -312,7 +312,7 @@ namespace Okex.Net
         /// <param name="underlying">The underlying index that the contract is based upon, e.g. BTC-USD.</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public async Task<WebCallResult<OkexOptionsResponse>> Options_CancelAllOrders_Async(string underlying, CancellationToken ct = default)
+        public virtual async Task<WebCallResult<OkexOptionsResponse>> Options_CancelAllOrders_Async(string underlying, CancellationToken ct = default)
         {
             underlying = underlying.ValidateSymbol();
 
@@ -338,7 +338,7 @@ namespace Okex.Net
         /// <param name="cancelOnFail">When the order amendment fails, whether to cancell the order automatically: 0: Don't cancel the order automatically 1: Automatically cancel the order. The default value is 0.</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public WebCallResult<OkexOptionsPlacedOrder> Options_ModifyOrder(string underlying, long? orderId = null, string? clientOrderId = null, string? requestId = null, decimal? newSize = null, decimal? newPrice = null, bool? cancelOnFail = null, CancellationToken ct = default) => Options_ModifyOrder_Async(underlying, orderId, clientOrderId, requestId, newSize, newPrice, cancelOnFail, ct).Result;
+        public virtual WebCallResult<OkexOptionsPlacedOrder> Options_ModifyOrder(string underlying, long? orderId = null, string? clientOrderId = null, string? requestId = null, decimal? newSize = null, decimal? newPrice = null, bool? cancelOnFail = null, CancellationToken ct = default) => Options_ModifyOrder_Async(underlying, orderId, clientOrderId, requestId, newSize, newPrice, cancelOnFail, ct).Result;
         /// <summary>
         /// Modify an unfilled order
         /// Rate Limit：20 Requests per second
@@ -358,7 +358,7 @@ namespace Okex.Net
         /// <param name="cancelOnFail">When the order amendment fails, whether to cancell the order automatically: 0: Don't cancel the order automatically 1: Automatically cancel the order. The default value is 0.</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public async Task<WebCallResult<OkexOptionsPlacedOrder>> Options_ModifyOrder_Async(string underlying, long? orderId = null, string? clientOrderId = null, string? requestId = null, decimal? newSize = null, decimal? newPrice = null, bool? cancelOnFail = null, CancellationToken ct = default)
+        public virtual async Task<WebCallResult<OkexOptionsPlacedOrder>> Options_ModifyOrder_Async(string underlying, long? orderId = null, string? clientOrderId = null, string? requestId = null, decimal? newSize = null, decimal? newPrice = null, bool? cancelOnFail = null, CancellationToken ct = default)
         {
             underlying = underlying.ValidateSymbol();
 
@@ -372,12 +372,12 @@ namespace Okex.Net
                 throw new ArgumentException("Must provide at least one of new_size or new_price");
 
             var parameters = new Dictionary<string, object>();
-            if (orderId.HasValue) parameters.AddOptionalParameter("order_id", orderId);
+            if (orderId.HasValue) parameters.AddOptionalParameter("order_id", orderId?.ToString(ci));
             if (!string.IsNullOrEmpty(clientOrderId)) parameters.AddOptionalParameter("client_oid", clientOrderId);
-            if (cancelOnFail.HasValue) parameters.AddOptionalParameter("cancel_on_fail", cancelOnFail.Value ? 1 : 0);
+            if (cancelOnFail.HasValue) parameters.AddOptionalParameter("cancel_on_fail", cancelOnFail.Value ? "1" : "0");
             if (!string.IsNullOrEmpty(requestId)) parameters.AddOptionalParameter("request_id", requestId);
-            if (newSize.HasValue) parameters.AddOptionalParameter("new_size", newSize);
-            if (newPrice.HasValue) parameters.AddOptionalParameter("new_price", newPrice);
+            if (newSize.HasValue) parameters.AddOptionalParameter("new_size", newSize?.ToString(ci));
+            if (newPrice.HasValue) parameters.AddOptionalParameter("new_price", newPrice?.ToString(ci));
 
             return await SendRequest<OkexOptionsPlacedOrder>(GetUrl(Endpoints_Options_MofiyOrder, underlying), HttpMethod.Post, ct, parameters, signed: true).ConfigureAwait(false);
         }
@@ -395,7 +395,7 @@ namespace Okex.Net
         /// <param name="orders">Orders Lİst</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public WebCallResult<OkexOptionsBatchOrders> Options_BatchModifyOrders(string underlying, IEnumerable<OkexOptionsModifyOrder> orders, CancellationToken ct = default) => Options_BatchModifyOrders_Async(underlying, orders, ct).Result;
+        public virtual WebCallResult<OkexOptionsBatchOrders> Options_BatchModifyOrders(string underlying, IEnumerable<OkexOptionsModifyOrder> orders, CancellationToken ct = default) => Options_BatchModifyOrders_Async(underlying, orders, ct).Result;
         /// <summary>
         /// Batch modify open orders; a maximum of 10 orders per underlying can be modified.
         /// Rate Limit：20 Requests per 2 seconds
@@ -409,7 +409,7 @@ namespace Okex.Net
         /// <param name="orders">Orders Lİst</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public async Task<WebCallResult<OkexOptionsBatchOrders>> Options_BatchModifyOrders_Async(string underlying, IEnumerable<OkexOptionsModifyOrder> orders, CancellationToken ct = default)
+        public virtual async Task<WebCallResult<OkexOptionsBatchOrders>> Options_BatchModifyOrders_Async(string underlying, IEnumerable<OkexOptionsModifyOrder> orders, CancellationToken ct = default)
         {
             if (orders == null || orders.Count() == 0)
                 throw new ArgumentException("Orders cant be null or with zero-elements");
@@ -453,7 +453,7 @@ namespace Okex.Net
         /// <param name="clientOrderId">Either client_oid or order_id must be present. client_oid should be the same Client-supplied order ID when submitting the order. It should be comprised of alpha-numeric characters with length 1 to 32. Both uppercase and lowercase are supported.</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public WebCallResult<OkexOptionsOrder> Options_GetOrderDetails(string underlying, long? orderId = null, string? clientOrderId = null, CancellationToken ct = default) => Options_GetOrderDetails_Async(underlying, orderId, clientOrderId, ct).Result;
+        public virtual WebCallResult<OkexOptionsOrder> Options_GetOrderDetails(string underlying, long? orderId = null, string? clientOrderId = null, CancellationToken ct = default) => Options_GetOrderDetails_Async(underlying, orderId, clientOrderId, ct).Result;
         /// <summary>
         /// Retrieve order details. Unfilled orders will be kept in record for only two hours after it is canceled.
         /// Rate Limit：40 Requests per 2 seconds
@@ -466,7 +466,7 @@ namespace Okex.Net
         /// <param name="clientOrderId">Either client_oid or order_id must be present. client_oid should be the same Client-supplied order ID when submitting the order. It should be comprised of alpha-numeric characters with length 1 to 32. Both uppercase and lowercase are supported.</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public async Task<WebCallResult<OkexOptionsOrder>> Options_GetOrderDetails_Async(string underlying, long? orderId = null, string? clientOrderId = null, CancellationToken ct = default)
+        public virtual async Task<WebCallResult<OkexOptionsOrder>> Options_GetOrderDetails_Async(string underlying, long? orderId = null, string? clientOrderId = null, CancellationToken ct = default)
         {
             underlying = underlying.ValidateSymbol();
 
@@ -491,7 +491,7 @@ namespace Okex.Net
         /// <param name="after">Pagination of data to return records earlier than the requested order_id</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public WebCallResult<OkexOptionsOrderList> Options_GetAllOrders(string underlying, OkexOptionsOrderState state, string? instrument = null, int limit = 100, long? before = null, long? after = null, CancellationToken ct = default) => Options_GetAllOrders_Async(underlying, state, instrument, limit, before, after, ct).Result;
+        public virtual WebCallResult<OkexOptionsOrderList> Options_GetAllOrders(string underlying, OkexOptionsOrderState state, string? instrument = null, int limit = 100, long? before = null, long? after = null, CancellationToken ct = default) => Options_GetAllOrders_Async(underlying, state, instrument, limit, before, after, ct).Result;
         /// <summary>
         /// Retrieve all orders of the underlying. This endpoint only retrieves data from the most recent 7 days.
         /// Rate Limit：10 Requests per 2 seconds
@@ -504,7 +504,7 @@ namespace Okex.Net
         /// <param name="after">Pagination of data to return records earlier than the requested order_id</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public async Task<WebCallResult<OkexOptionsOrderList>> Options_GetAllOrders_Async(string underlying, OkexOptionsOrderState state, string? instrument = null, int limit = 100, long? before = null, long? after = null, CancellationToken ct = default)
+        public virtual async Task<WebCallResult<OkexOptionsOrderList>> Options_GetAllOrders_Async(string underlying, OkexOptionsOrderState state, string? instrument = null, int limit = 100, long? before = null, long? after = null, CancellationToken ct = default)
         {
             underlying = underlying.ValidateSymbol();
             limit.ValidateIntBetween(nameof(limit), 1, 100);
@@ -512,11 +512,11 @@ namespace Okex.Net
             var parameters = new Dictionary<string, object>
             {
                 { "state", JsonConvert.SerializeObject(state, new OptionsOrderStateConverter(false)) },
-                { "limit", limit },
+                { "limit", limit.ToString(ci) },
             };
             parameters.AddOptionalParameter("instrument_id", instrument);
-            parameters.AddOptionalParameter("before", before);
-            parameters.AddOptionalParameter("after", after);
+            parameters.AddOptionalParameter("before", before?.ToString(ci));
+            parameters.AddOptionalParameter("after", after?.ToString(ci));
 
             return await SendRequest<OkexOptionsOrderList>(GetUrl(Endpoints_Options_OrderList, underlying), HttpMethod.Get, ct, parameters, signed: true).ConfigureAwait(false);
         }
@@ -533,7 +533,7 @@ namespace Okex.Net
         /// <param name="after">Pagination of data to return records earlier than the requested trade_id</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public WebCallResult<IEnumerable<OkexOptionsTransaction>> Options_GetTransactionDetails(string underlying, string? instrument = null, long? orderId = null, int limit = 100, long? before = null, long? after = null, CancellationToken ct = default) => Options_GetTransactionDetails_Async(underlying, instrument, orderId, limit, before, after, ct).Result;
+        public virtual WebCallResult<IEnumerable<OkexOptionsTransaction>> Options_GetTransactionDetails(string underlying, string? instrument = null, long? orderId = null, int limit = 100, long? before = null, long? after = null, CancellationToken ct = default) => Options_GetTransactionDetails_Async(underlying, instrument, orderId, limit, before, after, ct).Result;
         /// <summary>
         /// Retrieve recently filled transaction details. This endpoint only retrieves data from the most recent 7 days.
         /// Rate Limit：10 Requests per 2 seconds
@@ -546,19 +546,19 @@ namespace Okex.Net
         /// <param name="after">Pagination of data to return records earlier than the requested trade_id</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public async Task<WebCallResult<IEnumerable<OkexOptionsTransaction>>> Options_GetTransactionDetails_Async(string underlying, string? instrument = null, long? orderId = null, int limit = 100, long? before = null, long? after = null, CancellationToken ct = default)
+        public virtual async Task<WebCallResult<IEnumerable<OkexOptionsTransaction>>> Options_GetTransactionDetails_Async(string underlying, string? instrument = null, long? orderId = null, int limit = 100, long? before = null, long? after = null, CancellationToken ct = default)
         {
             underlying = underlying.ValidateSymbol();
             limit.ValidateIntBetween(nameof(limit), 1, 100);
 
             var parameters = new Dictionary<string, object>
             {
-                { "limit", limit },
+                { "limit", limit.ToString(ci) },
             };
             parameters.AddOptionalParameter("instrument_id", instrument);
-            parameters.AddOptionalParameter("order_id", orderId);
-            parameters.AddOptionalParameter("before", before);
-            parameters.AddOptionalParameter("after", after);
+            parameters.AddOptionalParameter("order_id", orderId?.ToString(ci));
+            parameters.AddOptionalParameter("before", before?.ToString(ci));
+            parameters.AddOptionalParameter("after", after?.ToString(ci));
 
             return await SendRequest<IEnumerable<OkexOptionsTransaction>>(GetUrl(Endpoints_Options_TransactionDetails, underlying), HttpMethod.Get, ct, parameters, signed: true).ConfigureAwait(false);
         }
@@ -573,7 +573,7 @@ namespace Okex.Net
         /// <param name="after">Pagination of data to return records earlier than the requested ledger_id</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public WebCallResult<IEnumerable<OkexOptionsBill>> Options_GetBills(string underlying, int limit = 100, long? before = null, long? after = null, CancellationToken ct = default) => Options_GetBills_Async(underlying, limit, before, after, ct).Result;
+        public virtual WebCallResult<IEnumerable<OkexOptionsBill>> Options_GetBills(string underlying, int limit = 100, long? before = null, long? after = null, CancellationToken ct = default) => Options_GetBills_Async(underlying, limit, before, after, ct).Result;
         /// <summary>
         /// Retrieve the bills of the options account. The bill refers to all transaction records that results in changing the balance of an account. Pagination is supported and the response is sorted with most recent first in reverse chronological order. This API can retrieve data from the last 7 days.
         /// Rate Limit：5 Requests per 2 seconds
@@ -584,17 +584,17 @@ namespace Okex.Net
         /// <param name="after">Pagination of data to return records earlier than the requested ledger_id</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public async Task<WebCallResult<IEnumerable<OkexOptionsBill>>> Options_GetBills_Async(string underlying, int limit = 100, long? before = null, long? after = null, CancellationToken ct = default)
+        public virtual async Task<WebCallResult<IEnumerable<OkexOptionsBill>>> Options_GetBills_Async(string underlying, int limit = 100, long? before = null, long? after = null, CancellationToken ct = default)
         {
             underlying = underlying.ValidateSymbol();
             limit.ValidateIntBetween(nameof(limit), 1, 100);
 
             var parameters = new Dictionary<string, object>
             {
-                { "limit", limit },
+                { "limit", limit.ToString(ci) },
             };
-            parameters.AddOptionalParameter("before", before);
-            parameters.AddOptionalParameter("after", after);
+            parameters.AddOptionalParameter("before", before?.ToString(ci));
+            parameters.AddOptionalParameter("after", after?.ToString(ci));
 
             return await SendRequest<IEnumerable<OkexOptionsBill>>(GetUrl(Endpoints_Options_Bills, underlying), HttpMethod.Get, ct, parameters, signed: true).ConfigureAwait(false);
         }
@@ -607,7 +607,7 @@ namespace Okex.Net
         /// <param name="category">Fee Schedule Tier: 1:Tier 1; Choose and enter one parameter between category and underlying</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public WebCallResult<OkexOptionsTradeFee> Options_GetTradeFeeRates(string? underlying = null, int? category = null, CancellationToken ct = default) => Options_GetTradeFeeRates_Async(underlying, category, ct).Result;
+        public virtual WebCallResult<OkexOptionsTradeFee> Options_GetTradeFeeRates(string? underlying = null, int? category = null, CancellationToken ct = default) => Options_GetTradeFeeRates_Async(underlying, category, ct).Result;
         /// <summary>
         /// Retrieve the account's trading fee rates. The fee rates of the sub accounts are the same as the fee rate of the parent account (Updated daily at midnight)
         /// Rate Limit：20 requests per 2 seconds
@@ -616,7 +616,7 @@ namespace Okex.Net
         /// <param name="category">Fee Schedule Tier: 1:Tier 1; Choose and enter one parameter between category and underlying</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public async Task<WebCallResult<OkexOptionsTradeFee>> Options_GetTradeFeeRates_Async(string? underlying = null, int? category = null, CancellationToken ct = default)
+        public virtual async Task<WebCallResult<OkexOptionsTradeFee>> Options_GetTradeFeeRates_Async(string? underlying = null, int? category = null, CancellationToken ct = default)
         {
             var parameters = new Dictionary<string, object>();
 
@@ -624,7 +624,7 @@ namespace Okex.Net
                 throw new ArgumentException("Either underlying or category must be present.");
 
             parameters.AddOptionalParameter("underlying", underlying);
-            parameters.AddOptionalParameter("category", category);
+            parameters.AddOptionalParameter("category", category?.ToString(ci));
 
             return await SendRequest<OkexOptionsTradeFee>(GetUrl(Endpoints_Options_TradeFee), HttpMethod.Get, ct, parameters, signed: true).ConfigureAwait(false);
         }
@@ -639,14 +639,14 @@ namespace Okex.Net
         /// </summary>
         /// <param name="ct">Cancellation Token</param>
         /// <returns>Underlying String Array</returns>
-        public WebCallResult<IEnumerable<string>> Options_GetUnderlyingList(CancellationToken ct = default) => Options_GetUnderlyingList_Async(ct).Result;
+        public virtual WebCallResult<IEnumerable<string>> Options_GetUnderlyingList(CancellationToken ct = default) => Options_GetUnderlyingList_Async(ct).Result;
         /// <summary>
         /// Retrieve supported underlying indexes for options trading
         /// Rate Limit：20 Requests per 2 seconds
         /// </summary>
         /// <param name="ct">Cancellation Token</param>
         /// <returns>Underlying String Array</returns>
-        public async Task<WebCallResult<IEnumerable<string>>> Options_GetUnderlyingList_Async(CancellationToken ct = default)
+        public virtual async Task<WebCallResult<IEnumerable<string>>> Options_GetUnderlyingList_Async(CancellationToken ct = default)
         {
             return await SendRequest<IEnumerable<string>>(GetUrl(Endpoints_Options_Underlying), HttpMethod.Get, ct).ConfigureAwait(false);
         }
@@ -660,7 +660,7 @@ namespace Okex.Net
         /// <param name="delivery">Contract delivery date, with format "YYMMDD"，e.g. "190527". If this parameter is provided, only data for corresponding instrument is returned.</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public WebCallResult<IEnumerable<OkexOptionsInstrument>> Options_GetInstruments(string underlying, string? instrument = null, DateTime? delivery = null, CancellationToken ct = default) => Options_GetInstruments_Async(underlying, instrument, delivery, ct).Result;
+        public virtual WebCallResult<IEnumerable<OkexOptionsInstrument>> Options_GetInstruments(string underlying, string? instrument = null, DateTime? delivery = null, CancellationToken ct = default) => Options_GetInstruments_Async(underlying, instrument, delivery, ct).Result;
         /// <summary>
         /// Retrieve list of instruments with open contracts for options trading.
         /// Rate Limit：20 Requests per 2 seconds
@@ -670,7 +670,7 @@ namespace Okex.Net
         /// <param name="delivery">Contract delivery date, with format "YYMMDD"，e.g. "190527". If this parameter is provided, only data for corresponding instrument is returned.</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public async Task<WebCallResult<IEnumerable<OkexOptionsInstrument>>> Options_GetInstruments_Async(string underlying, string? instrument = null, DateTime? delivery = null, CancellationToken ct = default)
+        public virtual async Task<WebCallResult<IEnumerable<OkexOptionsInstrument>>> Options_GetInstruments_Async(string underlying, string? instrument = null, DateTime? delivery = null, CancellationToken ct = default)
         {
             underlying = underlying.ValidateSymbol();
 
@@ -689,7 +689,7 @@ namespace Okex.Net
         /// <param name="delivery">Contract delivery date, with format "YYMMDD"，e.g. "190527". If this parameter is provided, only data for corresponding instrument is returned.</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public WebCallResult<IEnumerable<OkexOptionsMarketData>> Options_GetMarketData(string underlying, DateTime? delivery = null, CancellationToken ct = default) => Options_GetMarketData_Async(underlying, delivery, ct).Result;
+        public virtual WebCallResult<IEnumerable<OkexOptionsMarketData>> Options_GetMarketData(string underlying, DateTime? delivery = null, CancellationToken ct = default) => Options_GetMarketData_Async(underlying, delivery, ct).Result;
         /// <summary>
         /// Retrieve market data summary for all instrument of an underlying index.
         /// Rate Limit：20 Requests per 2 seconds
@@ -698,7 +698,7 @@ namespace Okex.Net
         /// <param name="delivery">Contract delivery date, with format "YYMMDD"，e.g. "190527". If this parameter is provided, only data for corresponding instrument is returned.</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public async Task<WebCallResult<IEnumerable<OkexOptionsMarketData>>> Options_GetMarketData_Async(string underlying, DateTime? delivery = null, CancellationToken ct = default)
+        public virtual async Task<WebCallResult<IEnumerable<OkexOptionsMarketData>>> Options_GetMarketData_Async(string underlying, DateTime? delivery = null, CancellationToken ct = default)
         {
             underlying = underlying.ValidateSymbol();
 
@@ -716,7 +716,7 @@ namespace Okex.Net
         /// <param name="instrument">Instrument ID，e.g. BTC-USD-190830-9000-C</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public WebCallResult<OkexOptionsMarketData> Options_GetMarketData(string underlying, string instrument, CancellationToken ct = default) => Options_GetMarketData_Async(underlying, instrument, ct).Result;
+        public virtual WebCallResult<OkexOptionsMarketData> Options_GetMarketData(string underlying, string instrument, CancellationToken ct = default) => Options_GetMarketData_Async(underlying, instrument, ct).Result;
         /// <summary>
         /// Retrieve market data summary of a single instrument.
         /// Rate Limit：20 Requests per 2 seconds
@@ -725,7 +725,7 @@ namespace Okex.Net
         /// <param name="instrument">Instrument ID，e.g. BTC-USD-190830-9000-C</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public async Task<WebCallResult<OkexOptionsMarketData>> Options_GetMarketData_Async(string underlying, string instrument, CancellationToken ct = default)
+        public virtual async Task<WebCallResult<OkexOptionsMarketData>> Options_GetMarketData_Async(string underlying, string instrument, CancellationToken ct = default)
         {
             underlying = underlying.ValidateSymbol();
             instrument = instrument.ValidateSymbol();
@@ -745,7 +745,7 @@ namespace Okex.Net
         /// <param name="size">Number of market depth results returned. Maximum 200</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public WebCallResult<OkexOptionsOrderBook> Options_GetOrderBook(string instrument, int size = 200, CancellationToken ct = default) => Options_GetOrderBook_Async(instrument, size, ct).Result;
+        public virtual WebCallResult<OkexOptionsOrderBook> Options_GetOrderBook(string instrument, int size = 200, CancellationToken ct = default) => Options_GetOrderBook_Async(instrument, size, ct).Result;
         /// <summary>
         /// Retrieve an instrument's order book.
         /// Rate Limit：20 Requests per 2 seconds
@@ -757,14 +757,14 @@ namespace Okex.Net
         /// <param name="size">Number of market depth results returned. Maximum 200</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public async Task<WebCallResult<OkexOptionsOrderBook>> Options_GetOrderBook_Async(string instrument, int size, CancellationToken ct = default)
+        public virtual async Task<WebCallResult<OkexOptionsOrderBook>> Options_GetOrderBook_Async(string instrument, int size, CancellationToken ct = default)
         {
             instrument = instrument.ValidateSymbol();
             size.ValidateIntBetween(nameof(size), 1, 200);
 
             var parameters = new Dictionary<string, object>
             {
-                { "size", size}
+                { "size", size.ToString(ci)}
             };
 
             return await SendRequest<OkexOptionsOrderBook>(GetUrl(Endpoints_Options_OrderBook, instrument), HttpMethod.Get, ct, parameters).ConfigureAwait(false);
@@ -780,7 +780,7 @@ namespace Okex.Net
         /// <param name="after">Pagination of data to return records earlier than the requested trade_id</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public WebCallResult<IEnumerable<OkexOptionsTrade>> Options_GetTrades(string instrument, int limit = 100, long? before = null, long? after = null, CancellationToken ct = default) => Options_GetTrades_Async(instrument, limit, before, after, ct).Result;
+        public virtual WebCallResult<IEnumerable<OkexOptionsTrade>> Options_GetTrades(string instrument, int limit = 100, long? before = null, long? after = null, CancellationToken ct = default) => Options_GetTrades_Async(instrument, limit, before, after, ct).Result;
         /// <summary>
         /// Retrieve recent transactions of an instrument.
         /// Rate Limit：20 Requests per 2 seconds
@@ -791,17 +791,17 @@ namespace Okex.Net
         /// <param name="after">Pagination of data to return records earlier than the requested trade_id</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public async Task<WebCallResult<IEnumerable<OkexOptionsTrade>>> Options_GetTrades_Async(string instrument, int limit = 100, long? before = null, long? after = null, CancellationToken ct = default)
+        public virtual async Task<WebCallResult<IEnumerable<OkexOptionsTrade>>> Options_GetTrades_Async(string instrument, int limit = 100, long? before = null, long? after = null, CancellationToken ct = default)
         {
             instrument = instrument.ValidateSymbol();
             limit.ValidateIntBetween(nameof(limit), 1, 100);
 
             var parameters = new Dictionary<string, object>
             {
-                { "limit", limit },
+                { "limit", limit.ToString(ci) },
             };
-            parameters.AddOptionalParameter("before", before);
-            parameters.AddOptionalParameter("after", after);
+            parameters.AddOptionalParameter("before", before?.ToString(ci));
+            parameters.AddOptionalParameter("after", after?.ToString(ci));
 
             return await SendRequest<IEnumerable<OkexOptionsTrade>>(GetUrl(Endpoints_Options_Trades, instrument), HttpMethod.Get, ct, parameters).ConfigureAwait(false);
         }
@@ -813,7 +813,7 @@ namespace Okex.Net
         /// <param name="instrument">Instrument ID, e.g. BTC-USD-190830-9000-C</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public WebCallResult<OkexOptionsTicker> Options_GetTicker(string instrument, CancellationToken ct = default) => Options_GetTicker_Async(instrument, ct).Result;
+        public virtual WebCallResult<OkexOptionsTicker> Options_GetTicker(string instrument, CancellationToken ct = default) => Options_GetTicker_Async(instrument, ct).Result;
         /// <summary>
         /// This retrieves the latest traded price, best-bid price, best-ask price etc.
         /// Rate Limit：20 Requests per 2 seconds
@@ -821,7 +821,7 @@ namespace Okex.Net
         /// <param name="instrument">Instrument ID, e.g. BTC-USD-190830-9000-C</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public async Task<WebCallResult<OkexOptionsTicker>> Options_GetTicker_Async(string instrument, CancellationToken ct = default)
+        public virtual async Task<WebCallResult<OkexOptionsTicker>> Options_GetTicker_Async(string instrument, CancellationToken ct = default)
         {
             return await SendRequest<OkexOptionsTicker>(GetUrl(Endpoints_Options_Ticker, instrument), HttpMethod.Get, ct).ConfigureAwait(false);
         }
@@ -840,7 +840,7 @@ namespace Okex.Net
         /// <param name="end">Start time，in ISO 8601 format; if blank default default 200 results</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public WebCallResult<IEnumerable<OkexOptionsCandle>> Options_GetCandles(string instrument, OkexSpotPeriod period, DateTime? start = null, DateTime? end = null, CancellationToken ct = default) => Options_GetCandles_Async(instrument, period, start, end, ct).Result;
+        public virtual WebCallResult<IEnumerable<OkexOptionsCandle>> Options_GetCandles(string instrument, OkexSpotPeriod period, DateTime? start = null, DateTime? end = null, CancellationToken ct = default) => Options_GetCandles_Async(instrument, period, start, end, ct).Result;
         /// <summary>
         /// Retrieve the candlestick data of an instrument, This API can retrieve the latest 1440 entries of data.
         /// Rate Limit：20 Requests per 2 seconds
@@ -855,7 +855,7 @@ namespace Okex.Net
         /// <param name="end">Start time，in ISO 8601 format; if blank default default 200 results</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public async Task<WebCallResult<IEnumerable<OkexOptionsCandle>>> Options_GetCandles_Async(string instrument, OkexSpotPeriod period, DateTime? start = null, DateTime? end = null, CancellationToken ct = default)
+        public virtual async Task<WebCallResult<IEnumerable<OkexOptionsCandle>>> Options_GetCandles_Async(string instrument, OkexSpotPeriod period, DateTime? start = null, DateTime? end = null, CancellationToken ct = default)
         {
             instrument = instrument.ValidateSymbol();
 
@@ -879,7 +879,7 @@ namespace Okex.Net
         /// <param name="limit">The default is 5</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public WebCallResult<IEnumerable<OkexOptionsSettlementHistory>> Options_GetSettlementHistory(string underlying, DateTime? start = null, DateTime? end = null, int limit = 5, CancellationToken ct = default) => Options_GetSettlementHistory_Async(underlying, start, end, limit, ct).Result;
+        public virtual WebCallResult<IEnumerable<OkexOptionsSettlementHistory>> Options_GetSettlementHistory(string underlying, DateTime? start = null, DateTime? end = null, int limit = 5, CancellationToken ct = default) => Options_GetSettlementHistory_Async(underlying, start, end, limit, ct).Result;
         /// <summary>
         /// Get historical settlement/exercise records
         /// Rate Limit：1 Requests per 10 seconds
@@ -890,14 +890,14 @@ namespace Okex.Net
         /// <param name="limit">The default is 5</param>
         /// <param name="ct">Cancellation Token</param>
         /// <returns></returns>
-        public async Task<WebCallResult<IEnumerable<OkexOptionsSettlementHistory>>> Options_GetSettlementHistory_Async(string underlying, DateTime? start = null, DateTime? end = null, int limit = 5, CancellationToken ct = default)
+        public virtual async Task<WebCallResult<IEnumerable<OkexOptionsSettlementHistory>>> Options_GetSettlementHistory_Async(string underlying, DateTime? start = null, DateTime? end = null, int limit = 5, CancellationToken ct = default)
         {
             limit.ValidateIntBetween(nameof(limit), 1, 5);
 
             var parameters = new Dictionary<string, object>();
-            parameters.AddOptionalParameter("start", start);
-            parameters.AddOptionalParameter("end", end);
-            parameters.AddOptionalParameter("limit", limit);
+            parameters.AddOptionalParameter("start", start?.DateTimeToIso8601String());
+            parameters.AddOptionalParameter("end", end?.DateTimeToIso8601String());
+            parameters.AddOptionalParameter("limit", limit.ToString(ci));
 
             return await SendRequest<IEnumerable<OkexOptionsSettlementHistory>>(GetUrl(Endpoints_Options_SettlementHistory, underlying), HttpMethod.Get, ct, parameters).ConfigureAwait(false);
         }
