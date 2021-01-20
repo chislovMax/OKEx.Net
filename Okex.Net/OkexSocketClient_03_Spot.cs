@@ -1,4 +1,4 @@
-﻿using CryptoExchange.Net.Objects;
+using CryptoExchange.Net.Objects;
 using CryptoExchange.Net.Sockets;
 using Newtonsoft.Json;
 using Okex.Net.Converters;
@@ -158,7 +158,7 @@ namespace Okex.Net
         /// <param name="depth">Order Book Depth</param>
         /// <param name="onData">The handler for updates</param>
         /// <returns></returns>
-        public virtual CallResult<UpdateSubscription> Spot_SubscribeToOrderBook(string symbol, OkexOrderBookDepth depth, Action<OkexSpotOrderBook> onData) => Spot_SubscribeToTrades_Async(symbol, depth, onData).Result;
+        public virtual CallResult<UpdateSubscription> Spot_SubscribeToOrderBook(string symbol, OkexOrderBookDepth depth, Action<OkexSpotOrderBook> onData) => Spot_SubscribeToOrderBook_Async(symbol, depth, onData).Result;
         /// <summary>
         /// Depth-Five: Back to the previous five entries of depth data,This data is snapshot data per 100 milliseconds.For every 100 milliseconds, we will snapshot and push 5 entries of market depth data of the current order book.
         /// Depth-All: After subscription, 400 entries of market depth data of the order book will first be pushed. Subsequently every 100 milliseconds we will snapshot and push entries that have changed during this time.
@@ -168,7 +168,7 @@ namespace Okex.Net
         /// <param name="depth">Order Book Depth</param>
         /// <param name="onData">The handler for updates</param>
         /// <returns></returns>
-        public virtual async Task<CallResult<UpdateSubscription>> Spot_SubscribeToTrades_Async(string symbol, OkexOrderBookDepth depth, Action<OkexSpotOrderBook> onData)
+        public virtual async Task<CallResult<UpdateSubscription>> Spot_SubscribeToOrderBook_Async(string symbol, OkexOrderBookDepth depth, Action<OkexSpotOrderBook> onData)
         {
             symbol = symbol.ValidateSymbol();
 

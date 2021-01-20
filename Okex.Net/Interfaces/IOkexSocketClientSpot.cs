@@ -1,4 +1,4 @@
-﻿using CryptoExchange.Net.Objects;
+using CryptoExchange.Net.Objects;
 using CryptoExchange.Net.Sockets;
 using Okex.Net.Enums;
 using Okex.Net.RestObjects;
@@ -25,6 +25,6 @@ namespace Okex.Net.Interfaces
         Task<CallResult<UpdateSubscription>> Spot_SubscribeToTicker_Async(string symbol, Action<OkexSpotTicker> onData);
         CallResult<UpdateSubscription> Spot_SubscribeToTrades(string symbol, Action<OkexSpotTrade> onData);
         Task<CallResult<UpdateSubscription>> Spot_SubscribeToTrades_Async(string symbol, Action<OkexSpotTrade> onData);
-        Task<CallResult<UpdateSubscription>> Spot_SubscribeToTrades_Async(string symbol, OkexOrderBookDepth depth, Action<OkexSpotOrderBook> onData);
+        Task<CallResult<UpdateSubscription>> Spot_SubscribeToOrderBook_Async(string symbol, OkexOrderBookDepth depth, Action<OkexSpotOrderBook> onData);
     }
 }
