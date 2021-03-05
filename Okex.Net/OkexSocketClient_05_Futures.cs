@@ -382,13 +382,29 @@ namespace Okex.Net
             return await Subscribe(request, null, true, internalHandler).ConfigureAwait(false);
         }
 
-        /// <summary>
-        /// Get user's order information , require login .
-        /// </summary>
-        /// <param name="symbol">Instrument Id</param>
-        /// <param name="onData">The handler for updates</param>
-        /// <returns></returns>
-        public virtual CallResult<UpdateSubscription> Futures_SubscribeToOrders(string symbol, Action<OkexFuturesOrder> onData) => Futures_SubscribeToOrders_Async(symbol, onData).Result;
+        public virtual async Task<CallResult<UpdateSubscription>> Futures_SubscribeToBalance_Async(string[] symbols, Action<OkexFuturesBalance> onData)
+        {
+	        var internalHandler = new Action<OkexSocketUpdateResponse<IEnumerable<OkexFuturesBalances>>>(data =>
+	        {
+		        foreach (var d in data.Data)
+		        foreach (var dd in d.Balances.Values)
+			        onData(dd);
+	        });
+
+
+	        var channels = symbols.Select(symbol => $"futures/account:{symbol}").ToArray();
+
+	        var request = new OkexSocketRequest(OkexSocketOperation.Subscribe, channels);
+	        return await Subscribe(request, null, true, internalHandler).ConfigureAwait(false);
+        }
+
+		/// <summary>
+		/// Get user's order information , require login .
+		/// </summary>
+		/// <param name="symbol">Instrument Id</param>
+		/// <param name="onData">The handler for updates</param>
+		/// <returns></returns>
+		public virtual CallResult<UpdateSubscription> Futures_SubscribeToOrders(string symbol, Action<OkexFuturesOrder> onData) => Futures_SubscribeToOrders_Async(symbol, onData).Result;
         /// <summary>
         /// Get user's order information , require login .
         /// </summary>
