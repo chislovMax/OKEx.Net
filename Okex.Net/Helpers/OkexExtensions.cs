@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Globalization;
 using System.Text.RegularExpressions;
 
@@ -55,10 +55,11 @@ namespace Okex.Net.Helpers
         {
             return !@this.IsNull();
         }
-        #endregion
 
-        #region ToStr
-        public static string? ToStr(this object @this, bool nullToEmpty = true)
+		#endregion
+
+		#region ToStr
+		public static string? ToStr(this object @this, bool nullToEmpty = true)
         {
             bool isNull = @this == null ? true : false;
             bool isDBNull = @this != null && @this.GetType() == typeof(DBNull) ? true : false;

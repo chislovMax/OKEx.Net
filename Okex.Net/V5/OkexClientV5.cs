@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -19,10 +18,12 @@ using Okex.Net.V5.Models;
 
 namespace Okex.Net.V5
 {
-	public class OkexClientV5 :  RestClient, IRestClient, IOkexClient
+	public class OkexClientV5 : RestClient, IOkexClient
 	{
 		public OkexClientV5(string clientName, RestClientOptions exchangeOptions, AuthenticationProvider? authenticationProvider) : base(clientName, exchangeOptions, authenticationProvider)
 		{
+			manualParseError = true;
+
 		}
 
 		public OkexClientV5(OkexClientOptions options) : base("Okex", options, options.ApiCredentials == null ? null : new OkexAuthenticationProvider(options.ApiCredentials, "", options.SignPublicRequests, ArrayParametersSerialization.Array))
@@ -30,14 +31,14 @@ namespace Okex.Net.V5
 			SignPublicRequests = options.SignPublicRequests;
 		}
 
-
 		public bool SignPublicRequests { get; }
 
 		private static readonly string BodyParameterKey = "<BODY>";
 
 		#region V5 EndPoints
 		private const string Endpoints_Currencies = "api/v5/asset/currencies";
-
+		private const string Endpoints_Instruments = "api/v5/public/instruments";
+		private const string Endpoints_OrderBooks = "api/v5/market/books";
 
 		#endregion
 
@@ -57,6 +58,46 @@ namespace Okex.Net.V5
 		{
 			return await SendRequest<OkexApiResponse<IEnumerable<OkexCurrency>>>(GetUrl(Endpoints_Currencies), HttpMethod.Get, ct, signed: true).ConfigureAwait(false);
 		}
+
+		public async Task<WebCallResult<OkexApiResponse<IEnumerable<OkexInstrument>>>> GetInstrumentsAsync(InstrumentTypeEnums instrumentType, string underlying = "", string instId = "", CancellationToken ct = default)
+		{
+			var parameters = new Dictionary<string, object> { { "instType", instrumentType.ToString() } };
+
+			if (string.IsNullOrWhiteSpace(underlying) && instrumentType == InstrumentTypeEnums.OPTION)
+			{
+				throw new ArgumentException("Underlying required for OPTION");
+			}
+
+			if (!string.IsNullOrWhiteSpace(underlying) && instrumentType == InstrumentTypeEnums.SPOT)
+			{
+				throw new ArgumentException("Underlying only applicable to FUTURES/SWAP/OPTION");
+			}
+
+			if (!string.IsNullOrWhiteSpace(underlying))
+			{
+				parameters.Add("uly", underlying);
+			}
+
+			if (!string.IsNullOrWhiteSpace(instId))
+			{
+				parameters.Add("instId", instId);
+			}
+
+			return await SendRequest<OkexApiResponse<IEnumerable<OkexInstrument>>>(GetUrl(Endpoints_Instruments), HttpMethod.Get, ct, parameters).ConfigureAwait(false);
+		}
+
+		public async Task<WebCallResult<OkexApiResponse<ICollection<OkexOrderBook>>>> GetOrderBookAsync(string instrumentName, string depth = "1", CancellationToken ct = default)
+		{
+			if (string.IsNullOrWhiteSpace(instrumentName))
+			{
+				throw new ArgumentException("Underlying only applicable to FUTURES/SWAP/OPTION");
+			}
+
+			var parameters = new Dictionary<string, object> { { "instId", instrumentName }, { "sz", depth } };
+
+			return await SendRequest<OkexApiResponse<ICollection<OkexOrderBook>>>(GetUrl(Endpoints_OrderBooks), HttpMethod.Get, ct, parameters).ConfigureAwait(false);
+		}
+
 
 		protected virtual Uri GetUrl(string endpoint, string param = "")
 		{
@@ -157,10 +198,10 @@ namespace Okex.Net.V5
 		}
 		protected virtual Error OkexParseErrorResponse(JToken error)
 		{
-			if (error["code"] == null || error["message"] == null)
+			if (error["code"] == null || error["msg"] == null)
 				return new ServerError(error.ToString());
 
-			return new ServerError((int)error["code"]!, (string)error["message"]!);
+			return new ServerError((int)error["code"]!, (string)error["msg"]!);
 		}
 	}
 }
