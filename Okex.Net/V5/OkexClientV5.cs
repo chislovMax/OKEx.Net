@@ -43,6 +43,7 @@ namespace Okex.Net.V5
 		private const string Endpoints_Instruments = "api/v5/public/instruments";
 		private const string Endpoints_OrderBooks = "api/v5/market/books";
 		private const string Endpoints_PlaceOrder = "api/v5/trade/order";
+		private const string Endpoints_OrderDetails = "api/v5/trade/order";
 		#endregion
 
 
@@ -154,6 +155,31 @@ namespace Okex.Net.V5
 			}
 
 			return await SendRequest<OkexApiResponse<ICollection<OkexOrderInfo>>>(GetUrl(Endpoints_PlaceOrder), HttpMethod.Post, ct, parameters, signed: true).ConfigureAwait(false);
+		}
+
+		public async Task<WebCallResult<OkexApiResponse<ICollection<OkexOrderDetails>>>> GetOrderDetailsAsync(string instrumentName, string orderId = "", string clientSuppliedId = "", CancellationToken ct = default)
+		{
+			if (string.IsNullOrWhiteSpace(instrumentName))
+			{
+				throw new ArgumentException("Instrument name must not be empty or null");
+			}
+			var parameters = new Dictionary<string, object>
+			{
+				{"instId", instrumentName}
+			};
+
+			if (!string.IsNullOrWhiteSpace(orderId))
+			{
+				parameters.Add("ordId", orderId);
+			}
+
+			if (!string.IsNullOrWhiteSpace(clientSuppliedId))
+			{
+				parameters.Add("clOrdId", clientSuppliedId);
+			}
+
+
+			return await SendRequest<OkexApiResponse<ICollection<OkexOrderDetails>>>(GetUrl(Endpoints_PlaceOrder), HttpMethod.Get, ct, parameters, signed: true).ConfigureAwait(false);
 		}
 
 		protected virtual Uri GetUrl(string endpoint, string param = "")
