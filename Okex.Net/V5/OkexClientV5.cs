@@ -47,7 +47,8 @@ namespace Okex.Net.V5
 		private const string Endpoints_Ticker = "api/v5/market/ticker";
 		private const string Endpoints_OrderList = "api/v5/trade/orders-pending";
 		private const string Endpoints_Balances = "api/v5/account/balance";
-
+		private const string Endpoints_AccountConfig = "api/v5/account/config";
+		
 		#endregion
 
 
@@ -56,12 +57,12 @@ namespace Okex.Net.V5
 			SetAuthenticationProvider(new OkexAuthenticationProvider(new ApiCredentials(apiKey, apiSecret), passPhrase, SignPublicRequests, ArrayParametersSerialization.Array));
 		}
 
-		public async Task<WebCallResult<OkexApiResponse<IEnumerable<OkexCurrency>>>> GetCurrenciesAsync(CancellationToken ct = default)
+		public async Task<WebCallResult<OkexApiResponse<OkexCurrency>>> GetCurrenciesAsync(CancellationToken ct = default)
 		{
-			return await SendRequest<OkexApiResponse<IEnumerable<OkexCurrency>>>(GetUrl(Endpoints_Currencies), HttpMethod.Get, ct, signed: true).ConfigureAwait(false);
+			return await SendRequest<OkexApiResponse<OkexCurrency>>(GetUrl(Endpoints_Currencies), HttpMethod.Get, ct, signed: true).ConfigureAwait(false);
 		}
 
-		public async Task<WebCallResult<OkexApiResponse<IEnumerable<OkexInstrument>>>> GetInstrumentsAsync(OkexInstrumentTypeEnum okexInstrumentType, string underlying = "", string instId = "", CancellationToken ct = default)
+		public async Task<WebCallResult<OkexApiResponse<OkexInstrument>>> GetInstrumentsAsync(OkexInstrumentTypeEnum okexInstrumentType, string underlying = "", string instId = "", CancellationToken ct = default)
 		{
 			var parameters = new Dictionary<string, object> { { "instType", okexInstrumentType.ToString() } };
 
@@ -85,10 +86,10 @@ namespace Okex.Net.V5
 				parameters.Add("instId", instId);
 			}
 
-			return await SendRequest<OkexApiResponse<IEnumerable<OkexInstrument>>>(GetUrl(Endpoints_Instruments), HttpMethod.Get, ct, parameters).ConfigureAwait(false);
+			return await SendRequest<OkexApiResponse<OkexInstrument>>(GetUrl(Endpoints_Instruments), HttpMethod.Get, ct, parameters).ConfigureAwait(false);
 		}
 
-		public async Task<WebCallResult<OkexApiResponse<ICollection<OkexOrderBook>>>> GetOrderBookAsync(string instrumentName, string depth = "1", CancellationToken ct = default)
+		public async Task<WebCallResult<OkexApiResponse<OkexOrderBook>>> GetOrderBookAsync(string instrumentName, string depth = "1", CancellationToken ct = default)
 		{
 			if (string.IsNullOrWhiteSpace(instrumentName))
 			{
@@ -97,10 +98,10 @@ namespace Okex.Net.V5
 
 			var parameters = new Dictionary<string, object> { { "instId", instrumentName }, { "sz", depth } };
 
-			return await SendRequest<OkexApiResponse<ICollection<OkexOrderBook>>>(GetUrl(Endpoints_OrderBooks), HttpMethod.Get, ct, parameters).ConfigureAwait(false);
+			return await SendRequest<OkexApiResponse<OkexOrderBook>>(GetUrl(Endpoints_OrderBooks), HttpMethod.Get, ct, parameters).ConfigureAwait(false);
 		}
 
-		public async Task<WebCallResult<OkexApiResponse<ICollection<OkexOrderInfo>>>> PlaceOrderAsync(OkexOrderParams orderParams, CancellationToken ct = default)
+		public async Task<WebCallResult<OkexApiResponse<OkexOrderInfo>>> PlaceOrderAsync(OkexOrderParams orderParams, CancellationToken ct = default)
 		{
 			var parameters = new Dictionary<string, object>();
 			if (string.IsNullOrWhiteSpace(orderParams.InstrumentName))
@@ -152,10 +153,10 @@ namespace Okex.Net.V5
 				parameters.Add("reduceOnly", orderParams.ReduceOnly.Value);
 			}
 
-			return await SendRequest<OkexApiResponse<ICollection<OkexOrderInfo>>>(GetUrl(Endpoints_PlaceOrder), HttpMethod.Post, ct, parameters, signed: true).ConfigureAwait(false);
+			return await SendRequest<OkexApiResponse<OkexOrderInfo>>(GetUrl(Endpoints_PlaceOrder), HttpMethod.Post, ct, parameters, signed: true).ConfigureAwait(false);
 		}
 
-		public async Task<WebCallResult<OkexApiResponse<ICollection<OkexOrderDetails>>>> GetOrderDetailsAsync(string instrumentName, string orderId = "", string clientSuppliedId = "", CancellationToken ct = default)
+		public async Task<WebCallResult<OkexApiResponse<OkexOrderDetails>>> GetOrderDetailsAsync(string instrumentName, string orderId = "", string clientSuppliedId = "", CancellationToken ct = default)
 		{
 			if (string.IsNullOrWhiteSpace(instrumentName))
 			{
@@ -176,10 +177,10 @@ namespace Okex.Net.V5
 				parameters.Add("clOrdId", clientSuppliedId);
 			}
 
-			return await SendRequest<OkexApiResponse<ICollection<OkexOrderDetails>>>(GetUrl(Endpoints_OrderDetails), HttpMethod.Get, ct, parameters, signed: true).ConfigureAwait(false);
+			return await SendRequest<OkexApiResponse<OkexOrderDetails>>(GetUrl(Endpoints_OrderDetails), HttpMethod.Get, ct, parameters, signed: true).ConfigureAwait(false);
 		}
 
-		public async Task<WebCallResult<OkexApiResponse<ICollection<OkexTicker>>>> GetTickerAsync(string instrumentName, CancellationToken ct = default)
+		public async Task<WebCallResult<OkexApiResponse<OkexTicker>>> GetTickerAsync(string instrumentName, CancellationToken ct = default)
 		{
 			if (string.IsNullOrWhiteSpace(instrumentName))
 			{
@@ -191,10 +192,10 @@ namespace Okex.Net.V5
 				{"instId", instrumentName}
 			};
 
-			return await SendRequest<OkexApiResponse<ICollection<OkexTicker>>>(GetUrl(Endpoints_Ticker), HttpMethod.Get, ct, parameters, signed: false).ConfigureAwait(false);
+			return await SendRequest<OkexApiResponse<OkexTicker>>(GetUrl(Endpoints_Ticker), HttpMethod.Get, ct, parameters, signed: false).ConfigureAwait(false);
 		}
 
-		public async Task<WebCallResult<OkexApiResponse<ICollection<OkexOrderDetails>>>> GetOrderListAsync(
+		public async Task<WebCallResult<OkexApiResponse<OkexOrderDetails>>> GetOrderListAsync(
 			OkexOrderListParams listParams, CancellationToken ct = default)
 		{
 			if (listParams.State.HasValue && (listParams.State != OkexOrderStateEnum.live || listParams.State != OkexOrderStateEnum.partially_filled))
@@ -243,18 +244,23 @@ namespace Okex.Net.V5
 				parameters.Add("limit", listParams.BeforeOrderId);
 			}
 
-			return await SendRequest<OkexApiResponse<ICollection<OkexOrderDetails>>>(GetUrl(Endpoints_OrderList), HttpMethod.Get, ct, parameters, signed: true).ConfigureAwait(false);
+			return await SendRequest<OkexApiResponse<OkexOrderDetails>>(GetUrl(Endpoints_OrderList), HttpMethod.Get, ct, parameters, signed: true).ConfigureAwait(false);
 		}
 
-		public async Task<WebCallResult<OkexApiResponse<ICollection<OkexBalances>>>> GetBalancesAsync(string currency = "",
-			CancellationToken ct = default)
+		public async Task<WebCallResult<OkexApiResponse<OkexBalances>>> GetBalancesAsync(string currency = "", CancellationToken ct = default)
 		{
 			var parameters = new Dictionary<string, object>();
 			if (!string.IsNullOrWhiteSpace(currency))
 			{
 				parameters.Add("ccy", currency);
 			}
-			return await SendRequest<OkexApiResponse<ICollection<OkexBalances>>>(GetUrl(Endpoints_Balances), HttpMethod.Get, ct, parameters, signed: true).ConfigureAwait(false);
+
+			return await SendRequest<OkexApiResponse<OkexBalances>>(GetUrl(Endpoints_Balances), HttpMethod.Get, ct, parameters, signed: true).ConfigureAwait(false);
+		}
+
+		public async Task<WebCallResult<OkexApiResponse<OkexAccountConfig>>> GetAccountConfigAsync(CancellationToken ct = default)
+		{
+			return await SendRequest<OkexApiResponse<OkexAccountConfig>>(GetUrl(Endpoints_AccountConfig), HttpMethod.Get, ct, signed: true).ConfigureAwait(false);
 		}
 
 		protected virtual Uri GetUrl(string endpoint, string param = "")
