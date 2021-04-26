@@ -9,6 +9,7 @@ namespace Okex.Net.V5.Models
 		public ICollection<OkexOrderBookEntry> Asks { get; set; }
 		[JsonProperty("bids")]
 		public ICollection<OkexOrderBookEntry> Bids { get; set; }
+		public string InstrumentName { get; set; }
 		[JsonProperty("ts")]
 		public string TimeStamp { get; set; }
 	}
