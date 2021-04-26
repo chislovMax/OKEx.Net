@@ -14,6 +14,7 @@ using Newtonsoft.Json.Linq;
 using Okex.Net.CoreObjects;
 using Okex.Net.Interfaces;
 using Okex.Net.RestObjects;
+using Okex.Net.V5.Enums;
 using Okex.Net.V5.Models;
 
 namespace Okex.Net.V5
@@ -59,16 +60,16 @@ namespace Okex.Net.V5
 			return await SendRequest<OkexApiResponse<IEnumerable<OkexCurrency>>>(GetUrl(Endpoints_Currencies), HttpMethod.Get, ct, signed: true).ConfigureAwait(false);
 		}
 
-		public async Task<WebCallResult<OkexApiResponse<IEnumerable<OkexInstrument>>>> GetInstrumentsAsync(InstrumentTypeEnums instrumentType, string underlying = "", string instId = "", CancellationToken ct = default)
+		public async Task<WebCallResult<OkexApiResponse<IEnumerable<OkexInstrument>>>> GetInstrumentsAsync(InstrumentTypeEnum instrumentType, string underlying = "", string instId = "", CancellationToken ct = default)
 		{
 			var parameters = new Dictionary<string, object> { { "instType", instrumentType.ToString() } };
 
-			if (string.IsNullOrWhiteSpace(underlying) && instrumentType == InstrumentTypeEnums.OPTION)
+			if (string.IsNullOrWhiteSpace(underlying) && instrumentType == InstrumentTypeEnum.OPTION)
 			{
 				throw new ArgumentException("Underlying required for OPTION");
 			}
 
-			if (!string.IsNullOrWhiteSpace(underlying) && instrumentType == InstrumentTypeEnums.SPOT)
+			if (!string.IsNullOrWhiteSpace(underlying) && instrumentType == InstrumentTypeEnum.SPOT)
 			{
 				throw new ArgumentException("Underlying only applicable to FUTURES/SWAP/OPTION");
 			}
@@ -98,6 +99,12 @@ namespace Okex.Net.V5
 			return await SendRequest<OkexApiResponse<ICollection<OkexOrderBook>>>(GetUrl(Endpoints_OrderBooks), HttpMethod.Get, ct, parameters).ConfigureAwait(false);
 		}
 
+		public async Task<WebCallResult<OkexApiResponse<OkexOrderInfo>>> PlaceOrderAsync(string instrumentName, TradeModeEnum tradeMode, OkexDirectionEnum side, string currency,
+			string depth = "1", CancellationToken ct = default)
+		{
+			var parameters = new Dictionary<string, object> ();
+			return await SendRequest<OkexApiResponse<OkexOrderInfo>>(GetUrl(Endpoints_OrderBooks), HttpMethod.Post, ct, parameters, signed: true).ConfigureAwait(false);
+		}
 
 		protected virtual Uri GetUrl(string endpoint, string param = "")
 		{
@@ -158,6 +165,7 @@ namespace Okex.Net.V5
 		{
 			this.OkexWriteParamBody(request, parameters, contentType);
 		}
+
 		protected virtual void OkexWriteParamBody(IRequest request, Dictionary<string, object> parameters, string contentType)
 		{
 			if (requestBodyFormat == RequestBodyFormat.Json)
@@ -196,6 +204,7 @@ namespace Okex.Net.V5
 		{
 			return this.OkexParseErrorResponse(error);
 		}
+
 		protected virtual Error OkexParseErrorResponse(JToken error)
 		{
 			if (error["code"] == null || error["msg"] == null)

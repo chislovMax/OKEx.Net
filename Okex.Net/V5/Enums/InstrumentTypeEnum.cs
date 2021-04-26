@@ -1,6 +1,6 @@
-namespace Okex.Net.V5
+namespace Okex.Net.V5.Enums
 {
-	public enum InstrumentTypeEnums
+	public enum InstrumentTypeEnum
 	{
 		SPOT = 1,
 		SWAP = 2,
