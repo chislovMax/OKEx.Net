@@ -65,6 +65,7 @@ namespace Okex.Net.CoreObjects
 					 { "OK-ACCESS-SIGN", signature },
 					 { "OK-ACCESS-TIMESTAMP", time },
 					 { "OK-ACCESS-PASSPHRASE", PassPhrase.GetString() },
+					 {"x-simulated-trading", "1"}
 				};
 		}
 

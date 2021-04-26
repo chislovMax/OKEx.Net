@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
@@ -12,6 +13,7 @@ using CryptoExchange.Net.Objects;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Okex.Net.CoreObjects;
+using Okex.Net.Helpers;
 using Okex.Net.Interfaces;
 using Okex.Net.RestObjects;
 using Okex.Net.V5.Enums;
@@ -40,7 +42,7 @@ namespace Okex.Net.V5
 		private const string Endpoints_Currencies = "api/v5/asset/currencies";
 		private const string Endpoints_Instruments = "api/v5/public/instruments";
 		private const string Endpoints_OrderBooks = "api/v5/market/books";
-
+		private const string Endpoints_PlaceOrder = "api/v5/trade/order";
 		#endregion
 
 
@@ -91,7 +93,7 @@ namespace Okex.Net.V5
 		{
 			if (string.IsNullOrWhiteSpace(instrumentName))
 			{
-				throw new ArgumentException("Underlying only applicable to FUTURES/SWAP/OPTION");
+				throw new ArgumentException("Instrument name must not be empty or null");
 			}
 
 			var parameters = new Dictionary<string, object> { { "instId", instrumentName }, { "sz", depth } };
@@ -99,11 +101,59 @@ namespace Okex.Net.V5
 			return await SendRequest<OkexApiResponse<ICollection<OkexOrderBook>>>(GetUrl(Endpoints_OrderBooks), HttpMethod.Get, ct, parameters).ConfigureAwait(false);
 		}
 
-		public async Task<WebCallResult<OkexApiResponse<OkexOrderInfo>>> PlaceOrderAsync(string instrumentName, TradeModeEnum tradeMode, OkexDirectionEnum side, string currency,
-			string depth = "1", CancellationToken ct = default)
+		public async Task<WebCallResult<OkexApiResponse<ICollection<OkexOrderInfo>>>> PlaceOrderAsync(OkexOrderParams orderParams, CancellationToken ct = default)
 		{
-			var parameters = new Dictionary<string, object> ();
-			return await SendRequest<OkexApiResponse<OkexOrderInfo>>(GetUrl(Endpoints_OrderBooks), HttpMethod.Post, ct, parameters, signed: true).ConfigureAwait(false);
+			var parameters = new Dictionary<string, object>();
+			if (string.IsNullOrWhiteSpace(orderParams.InstrumentName))
+			{
+				throw new ArgumentException("Instrument name must not be empty or null");
+			}
+
+			if (orderParams.Amount == 0m)
+			{
+				throw new ArgumentException("Amount must be more then 0");
+			}
+
+			if (orderParams.Price is null && orderParams.OrderType == OkexOrderTypeEnum.limit)
+			{
+				throw new ArgumentException("Price required for limit order");
+			}
+
+			parameters.Add("instId", orderParams.InstrumentName);
+			parameters.Add("tdMode", orderParams.TradeMode.ToString());
+			parameters.Add("side", orderParams.Side.ToString());
+			parameters.Add("ordType", orderParams.OrderType.ToString());
+			parameters.Add("sz", orderParams.Amount.ToString(CultureInfo.InvariantCulture));
+			if (orderParams.OrderType == OkexOrderTypeEnum.limit)
+			{
+				parameters.Add("px", orderParams.Price.Value.ToString());
+			}
+			if (!string.IsNullOrWhiteSpace(orderParams.Currency))
+			{
+				parameters.Add("ccy", orderParams.Currency);
+			}
+			if (!string.IsNullOrWhiteSpace(orderParams.ClientSuppliedOrderId))
+			{
+				parameters.Add("clOrdId", orderParams.ClientSuppliedOrderId);
+			}
+			if (!string.IsNullOrWhiteSpace(orderParams.Tag))
+			{
+				parameters.Add("tag", orderParams.Tag);
+			}
+			if (!string.IsNullOrWhiteSpace(orderParams.Tag))
+			{
+				parameters.Add("tag", orderParams.Tag);
+			}
+			if (orderParams.PositionSide != null)
+			{
+				parameters.Add("posSide", orderParams.PositionSide.ToString());
+			}
+			if (orderParams.ReduceOnly != null)
+			{
+				parameters.Add("reduceOnly", orderParams.ReduceOnly.Value);
+			}
+
+			return await SendRequest<OkexApiResponse<ICollection<OkexOrderInfo>>>(GetUrl(Endpoints_PlaceOrder), HttpMethod.Post, ct, parameters, signed: true).ConfigureAwait(false);
 		}
 
 		protected virtual Uri GetUrl(string endpoint, string param = "")
