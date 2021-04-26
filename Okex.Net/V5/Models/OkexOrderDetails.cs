@@ -6,7 +6,7 @@ namespace Okex.Net.V5.Models
 	public class OkexOrderDetails
 	{
 		[JsonProperty("instType")]
-		public InstrumentTypeEnum InstrumentType { get; set; }
+		public OkexInstrumentTypeEnum OkexInstrumentType { get; set; }
 		[JsonProperty("instId")]
 		public string InstrumentName { get; set; }
 		[JsonProperty("ccy")]
@@ -22,19 +22,19 @@ namespace Okex.Net.V5.Models
 		[JsonProperty("sz")]
 		public decimal Amount { get; set; }
 		[JsonProperty("pnl")]
-		public decimal PnL { get; set; }
+		public decimal? PnL { get; set; }
 		[JsonProperty("ordType")]
 		public OkexOrderTypeEnum OrderType { get; set; }
 		[JsonProperty("side")]
 		public OkexDirectionEnum Side { get; set; }
 		[JsonProperty("posSide")]
-		public PositionSideEnum? PositionSide { get; set; }
+		public OkexPositionSideEnum? PositionSide { get; set; }
 		[JsonProperty("tdMode")]
 		public TradeModeEnum TradeMode { get; set; }
 		[JsonProperty("accFillSz")]
-		public decimal AccumulatedFillQuantity { get; set; }
+		public decimal? AccumulatedFillQuantity { get; set; }
 		[JsonProperty("fillPx")]
-		public decimal LastFilledPrice { get; set; }
+		public decimal? LastFilledPrice { get; set; }
 		[JsonProperty("tradeId")]
 		public string LastTradeId { get; set; }
 		[JsonProperty("fillSz")]
@@ -42,11 +42,11 @@ namespace Okex.Net.V5.Models
 		[JsonProperty("fillTime")]
 		public string LastFilledTime { get; set; }
 		[JsonProperty("avgPx")]
-		public decimal AveragePrice { get; set; }
+		public decimal? AveragePrice { get; set; }
 		[JsonProperty("state")]
 		public OkexOrderStateEnum State { get; set; }
 		[JsonProperty("lever")]
-		public decimal Leverage { get; set; }
+		public decimal? Leverage { get; set; }
 		[JsonProperty("tpTriggerPx")]
 		public decimal? TakeProfitTriggerPrice { get; set; }
 		[JsonProperty("tpOrdPx")]

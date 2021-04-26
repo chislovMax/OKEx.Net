@@ -8,7 +8,7 @@ namespace Okex.Net.V5.Models
 		public TradeModeEnum TradeMode { get; set; }
 		public OkexDirectionEnum Side { get; set; }
 		public string Currency { get; set; }
-		public PositionSideEnum? PositionSide { get; set; }
+		public OkexPositionSideEnum? PositionSide { get; set; }
 		public string ClientSuppliedOrderId { get; set; }
 		public string Tag { get; set; }
 		public OkexOrderTypeEnum OrderType { get; set; }
