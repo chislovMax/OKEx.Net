@@ -2,9 +2,9 @@ using Newtonsoft.Json;
 
 namespace Okex.Net.V5.Models
 {
-	public class OrderBookRequest
+	public class SocketInstrumentRequest
 	{
-		public OrderBookRequest(string channel, string instrumentName)
+		public SocketInstrumentRequest(string channel, string instrumentName)
 		{
 			Channel = channel;
 			InstrumentName = instrumentName;

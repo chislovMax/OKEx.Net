@@ -9,11 +9,9 @@ using CryptoExchange.Net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NLog;
-using Okex.Net.SocketObjects.Structure;
 using Okex.Net.V5.Enums;
 using Okex.Net.V5.Models;
 using WebSocket4Net;
-using ILogger = Microsoft.Extensions.Logging.ILogger;
 using OkexSocketRequest = Okex.Net.V5.Models.OkexSocketRequest;
 using OkexSocketResponse = Okex.Net.V5.Models.OkexSocketResponse;
 
@@ -24,36 +22,30 @@ namespace Okex.Net.V5.Clients
 		public OkexSocketClientPublic()
 		{
 			InitProcessors();
-
 			CreateSocket();
 		}
 
 		public Guid Id { get; } = Guid.NewGuid();
-		public string Name { get; set; } = "Unnamed";
 		public bool SocketConnected => _ws.State == WebSocketState.Open;
 		public DateTime LastMessageDate { get; private set; } = DateTime.MinValue;
 
 		internal event Action ConnectionBroken = () => { };
-		internal event Action<OkexOrderDetails> OrderUpdated = order => { };
 		internal event Action<OkexOrderBook> BookPriceUpdate = bookPrice => { };
 		internal event Action<OkexTicker> TickerUpdate = ticker => { };
+		internal event Action<OkexMarkPrice> MarkPriceUpdate = markPrice => { };
 		internal event Action<ErrorMessage> ErrorReceived = error => { };
-		//internal event Action<IndexPrice> IndexPriceUpdate = price => { };
-		//internal event Action<UserChanges> UserChangesUpdate = changes => { };
 
 		private bool _onKilled;
-		private int _privateApiId;
-		private string _accessToken;
 
 		private WebSocket _ws;
 		private readonly int _reconnectTime;
 		private readonly Logger _logger = LogManager.GetCurrentClassLogger();
 		private readonly List<OkexChannel> _channels = new List<OkexChannel>();
-		private readonly ChannelTypeEnum[] _userChannelTypes = { ChannelTypeEnum.BookPrice, };
-		private readonly Dictionary<string, ChannelTypeEnum> _channelSubscribes = new Dictionary<string, ChannelTypeEnum>();
 		private readonly Dictionary<string, ChannelTypeEnum> _channelTypes = new Dictionary<string, ChannelTypeEnum>
 		{
-			{"books5", ChannelTypeEnum.BookPrice}
+			{"books5", ChannelTypeEnum.OrderBook},
+			{"tickers", ChannelTypeEnum.Ticker},
+			{"mark-price", ChannelTypeEnum.MarkPrice}
 		};
 
 		private const string BaseUrl = "wss://www.deribit.com/ws/api/v2";
@@ -200,30 +192,11 @@ namespace Okex.Net.V5.Clients
 
 		#endregion
 
-		#region Public channels
-
-		private const string SetHeartBeatMethod = "public/set_heartbeat";
-		private const string TestMethod = "public/test";
-
-		//internal void SendSetHeartbeat()
-		//{
-		//	var param = new SetHeartbeatParams();
-		//	var request = new RequestMessage(SetHeartBeatMethod, 100, param);
-		//	Send(request);
-		//}
-
-		//internal void SendTest()
-		//{
-		//	var request = new RequestMessage(TestMethod, 100, new { });
-		//	Send(request);
-		//}
-
-		//internal void SubscribeToTicker(string instrument)
-		//{
-		//	var channel = GetTickerChannel(instrument);
-		//	AddChannel(channel, ChannelTypes.Ticker);
-		//	SendSubscribeToPublicChannels();
-		//}
+		public void SubscribeToTicker(string instrument)
+		{
+			AddChannel(GetTickerChannel(instrument));
+			SendSubscribeToChannels();
+		}
 
 		public void SubscribeToBookPrice(string instrumentName)
 		{
@@ -231,57 +204,54 @@ namespace Okex.Net.V5.Clients
 			SendSubscribeToChannels();
 		}
 
-		//internal void SubscribeToBookPrices(params string[] instruments)
-		//{
-		//	var channels = instruments.Select(GetBookPriceChannel).ToArray();
-		//	AddChannels(channels, ChannelTypeEnum.BookPrice);
-		//	//SendSubscribeToPublicChannels();
-		//}
-
-		//internal void SubscribeToIndexPrices()
-		//{
-		//	SubscribeToIndexPrice("btc");
-		//	SubscribeToIndexPrice("eth");
-		//}
-
-		//private void SubscribeToIndexPrice(string currency)
-		//{
-		//	var channel = GetIndexPriceChannel(currency);
-		//	AddChannel(channel, ChannelTypes.IndexPrice);
-		//	SendSubscribeToPublicChannels();
-		//}
-
+		public void SubscribeToMarkPrice(string instrumentName)
+		{
+			AddChannel(GetMarkPriceChannel(instrumentName));
+			SendSubscribeToChannels();
+		}
 		public void UnsubscribeBookPriceChannel(string instrumentName)
 		{
-			var channelInstrumentBook = GetBookPriceChannel(instrumentName);
-			UnsubscribeChannel(channelInstrumentBook);
+			var orderBookChannel = GetBookPriceChannel(instrumentName);
+			UnsubscribeChannel(orderBookChannel);
 		}
 
-		//internal void UnsubscribeToTicker(string instrument)
-		//{
-		//	var channel = GetTickerChannel(instrument);
-		//	UnsubscribeToPublicChannel(channel);
-		//}
+		public void UnsubscribeTickerChannel(string instrumentName)
+		{
+			var tickerChannel = GetTickerChannel(instrumentName);
+			UnsubscribeChannel(tickerChannel);
+		}
 
-		//#region Generate channel strings
+		public void UnsubscribeMarkPriceChannel(string instrumentName)
+		{
+			var markPriceChannel = GetMarkPriceChannel(instrumentName);
+			UnsubscribeChannel(markPriceChannel);
+		}
 
-		//private string GetIndexPriceChannel(string currency)
-		//{
-		//	return $"deribit_price_index.{currency.ToLower()}_usd";
-		//}
+		#region Generate channel strings
 
 		private OkexChannel GetBookPriceChannel(string instrument)
 		{
 			var channelName = $"books5{instrument}";
 			var okexChannel = _channels.FirstOrDefault(x => x.ChannelName == channelName);
 			return okexChannel
-					 ?? new OkexChannel(channelName, new OrderBookRequest("books5", instrument));
+					 ?? new OkexChannel(channelName, new SocketInstrumentRequest("books5", instrument));
 		}
 
-		//private string GetTickerChannel(string instrument)
-		//{
-		//	return $"ticker.{instrument}.100ms";
-		//}
+		private OkexChannel GetTickerChannel(string instrument)
+		{
+			var channelName = $"tickers{instrument}";
+			var okexChannel = _channels.FirstOrDefault(x => x.ChannelName == channelName);
+			return okexChannel
+			       ?? new OkexChannel(channelName, new SocketInstrumentRequest("tickers", instrument));
+		}
+
+		private OkexChannel GetMarkPriceChannel(string instrument)
+		{
+			var channelName = $"mark-price{instrument}";
+			var okexChannel = _channels.FirstOrDefault(x => x.ChannelName == channelName);
+			return okexChannel
+			       ?? new OkexChannel(channelName, new SocketInstrumentRequest("mark-price", instrument));
+		}
 
 		#endregion
 
@@ -303,11 +273,6 @@ namespace Okex.Net.V5.Clients
 
 		internal void SendSubscribeToChannels()
 		{
-			//var channels = _channelSubscribes
-			//	.Where(x => _userChannelTypes.Contains(x.Value))
-			//	.Select(x => x.Key)
-			//	.ToArray();
-
 			var channels = _channels
 				.Select(x => x.Params)
 				.ToArray();
@@ -332,24 +297,22 @@ namespace Okex.Net.V5.Clients
 
 		#region ProcessMessage
 
-		private Dictionary<string, Action<OkexSocketResponse>> _methodProcessorActions;
+		private Dictionary<string, Action<OkexSocketResponse>> _eventProcessorActions;
 		private Dictionary<ChannelTypeEnum, Action<OkexSocketResponse>> _channelProcessorActions;
 
 		private void InitProcessors()
 		{
-			_methodProcessorActions = new Dictionary<string, Action<OkexSocketResponse>>
+			_eventProcessorActions = new Dictionary<string, Action<OkexSocketResponse>>
 			{
-				{"subscribe", ProcessSubscription},
+				{"subscribe", ProcessSubscribe},
 				{"error", ProcessError},
 				{"unsubscribe", ProcessUnsubscribe}
 			};
 			_channelProcessorActions = new Dictionary<ChannelTypeEnum, Action<OkexSocketResponse>>
 			{
-				{ChannelTypeEnum.BookPrice, ProcessBookPrice},
-				//{ChannelTypes.Ticker, ProcessTicker},
-				//{ChannelTypes.IndexPrice, ProcessIndexPrice},
-				//{ChannelTypes.UserChanges, ProcessUserChanges},
-				//{ChannelTypes.Order, ProcessOrder}
+				{ChannelTypeEnum.OrderBook, ProcessBookPrice},
+				{ChannelTypeEnum.Ticker, ProcessTicker},
+				{ChannelTypeEnum.MarkPrice, ProcessMarkPrice}
 			};
 		}
 
@@ -381,7 +344,7 @@ namespace Okex.Net.V5.Clients
 				return;
 			}
 
-			if (!_methodProcessorActions.TryGetValue(response.Event, out var action))
+			if (!_eventProcessorActions.TryGetValue(response.Event, out var action))
 			{
 				_logger.Trace($"Unhandled message: {message}");
 				return;
@@ -408,71 +371,63 @@ namespace Okex.Net.V5.Clients
 			action(response);
 		}
 
-		private void ProcessError(OkexSocketResponse response)
+		private void ProcessSubscribe(OkexSocketResponse response)
 		{
-			ErrorReceived.Invoke(new ErrorMessage(response.Code, response.Message));
+			_logger.Trace($"SUBSCRIBED to channels {JsonConvert.SerializeObject(response.Argument)}");
 		}
 
 		private void ProcessUnsubscribe(OkexSocketResponse socketResponse)
 		{
-			_logger.Trace($"UNSUBSCRIBE from a channel {JsonConvert.SerializeObject(socketResponse.Argument)}");
+			_logger.Trace($"UNSUBSCRIBED from a channels {JsonConvert.SerializeObject(socketResponse.Argument)}");
 		}
 
-		//private void ProcessHeartbeat(ResponseParameters param)
-		//{
-		//	if (param?.ParamType.IsNullOrWhiteSpace() ?? true)
-		//	{
-		//		return;
-		//	}
-
-		//	if (param.ParamType == "test_request")
-		//	{
-		//		SendTest();
-		//	}
-		//}
-
-		//private void ProcessOrder(JToken data)
-		//{
-		//	var orders = data.Is<JArray>() ? data.ToObject<Order[]>() : new[] { data.ToObject<Order>() };
-		//	foreach (var order in orders)
-		//	{
-		//		//TODO: async
-		//		OrderUpdated.Invoke(order);
-		//	}
-		//}
-
-		//private void ProcessUserChanges(JToken data)
-		//{
-		//	var userChanges = data.ToObject<UserChanges>();
-		//	UserChangesUpdate.Invoke(userChanges);
-		//}
-
-		//private void ProcessIndexPrice(JToken data)
-		//{
-		//	var indexPrice = data.ToObject<IndexPrice>();
-		//	IndexPriceUpdate.Invoke(indexPrice);
-		//}
+		private void ProcessError(OkexSocketResponse response)
+		{
+			_logger.Trace(JsonConvert.SerializeObject(response));
+			ErrorReceived.Invoke(new ErrorMessage(response.Code, response.Message));
+		}
 
 		private void ProcessBookPrice(OkexSocketResponse response)
 		{
-			var instrument = response.Argument["instId"]?.Value<string>();
 			var data = response.Data?.FirstOrDefault();
 			var bookPrice = data?.ToObject<OkexOrderBook>();
+			var instrument = response.Argument["instId"]?.Value<string>();
 			if (bookPrice is null || string.IsNullOrWhiteSpace(instrument))
 			{
 				return;
 			}
 
 			bookPrice.InstrumentName = instrument;
-			_logger.Trace(JsonConvert.SerializeObject(bookPrice));
 			BookPriceUpdate.Invoke(bookPrice);
 		}
 
-		//private void ProcessTicker(JToken data)
-		//{
-		//	var ticker = data.ToObject<Ticker>();
-		//	TickerUpdate.Invoke(ticker);
-		//}
+		private void ProcessTicker(OkexSocketResponse response)
+		{
+			var data = response.Data?.FirstOrDefault();
+			var ticker = data?.ToObject<OkexTicker>();
+			var instrument = response.Argument["instId"]?.Value<string>();
+			if (ticker is null || string.IsNullOrWhiteSpace(instrument))
+			{
+				return;
+			}
+
+			ticker.InstrumentName = instrument;
+			TickerUpdate.Invoke(ticker);
+		}
+
+		private void ProcessMarkPrice(OkexSocketResponse response)
+		{
+			var data = response.Data?.FirstOrDefault();
+			var markPrice = data?.ToObject<OkexMarkPrice>();
+			var instrument = response.Argument["instId"]?.Value<string>();
+			if (markPrice is null || string.IsNullOrWhiteSpace(instrument))
+			{
+				return;
+			}
+
+			markPrice.InstrumentName = instrument;
+			MarkPriceUpdate.Invoke(markPrice);
+		}
 
 		#endregion
 
