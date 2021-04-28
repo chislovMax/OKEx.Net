@@ -13,20 +13,17 @@ using CryptoExchange.Net.Objects;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Okex.Net.CoreObjects;
-using Okex.Net.Helpers;
 using Okex.Net.Interfaces;
-using Okex.Net.RestObjects;
 using Okex.Net.V5.Enums;
 using Okex.Net.V5.Models;
 
-namespace Okex.Net.V5
+namespace Okex.Net.V5.Clients
 {
 	public class OkexClientV5 : RestClient, IOkexClient
 	{
 		public OkexClientV5(string clientName, RestClientOptions exchangeOptions, AuthenticationProvider? authenticationProvider) : base(clientName, exchangeOptions, authenticationProvider)
 		{
 			manualParseError = true;
-
 		}
 
 		public OkexClientV5(OkexClientOptions options) : base("Okex", options, options.ApiCredentials == null ? null : new OkexAuthenticationProvider(options.ApiCredentials, "", options.SignPublicRequests, ArrayParametersSerialization.Array))
@@ -120,7 +117,7 @@ namespace Okex.Net.V5
 			}
 
 			parameters.Add("instId", orderParams.InstrumentName);
-			parameters.Add("tdMode", orderParams.TradeMode.ToString());
+			parameters.Add("tdMode", orderParams.OkexTradeMode.ToString());
 			parameters.Add("side", orderParams.Side.ToString());
 			parameters.Add("ordType", orderParams.OrderType.ToString());
 			parameters.Add("sz", orderParams.Amount.ToString(CultureInfo.InvariantCulture));

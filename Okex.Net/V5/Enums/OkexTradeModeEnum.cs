@@ -1,6 +1,6 @@
 namespace Okex.Net.V5
 {
-	public enum TradeModeEnum
+	public enum OkexTradeModeEnum
 	{
 		cross = 1,
 		isolated = 2,

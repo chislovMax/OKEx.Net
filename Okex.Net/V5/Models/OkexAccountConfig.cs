@@ -18,7 +18,7 @@ namespace Okex.Net.V5.Models
 		[JsonProperty("levelTmp")]
 		public string LevelTemporary { get; set; }
 		[JsonProperty("acctLv")]
-		public AccountLevelEnum AccountLevel { get; set; }
+		public OkexAccountLevelEnum OkexAccountLevel { get; set; }
 
 	}
 }

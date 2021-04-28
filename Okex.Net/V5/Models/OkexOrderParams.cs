@@ -5,7 +5,7 @@ namespace Okex.Net.V5.Models
 	public class OkexOrderParams
 	{
 		public string InstrumentName { get; set; }
-		public TradeModeEnum TradeMode { get; set; }
+		public OkexTradeModeEnum OkexTradeMode { get; set; }
 		public OkexDirectionEnum Side { get; set; }
 		public string Currency { get; set; }
 		public OkexPositionSideEnum? PositionSide { get; set; }

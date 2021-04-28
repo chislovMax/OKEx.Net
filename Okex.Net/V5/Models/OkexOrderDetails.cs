@@ -30,7 +30,7 @@ namespace Okex.Net.V5.Models
 		[JsonProperty("posSide")]
 		public OkexPositionSideEnum? PositionSide { get; set; }
 		[JsonProperty("tdMode")]
-		public TradeModeEnum TradeMode { get; set; }
+		public OkexTradeModeEnum OkexTradeMode { get; set; }
 		[JsonProperty("accFillSz")]
 		public decimal? AccumulatedFillQuantity { get; set; }
 		[JsonProperty("fillPx")]
