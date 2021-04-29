@@ -21,7 +21,8 @@ namespace Okex.Net.V5.Clients
 {
 	public class OkexClientV5 : RestClient, IOkexClient
 	{
-		public OkexClientV5(string clientName, RestClientOptions exchangeOptions, AuthenticationProvider? authenticationProvider) : base(clientName, exchangeOptions, authenticationProvider)
+		public OkexClientV5(string clientName, RestClientOptions exchangeOptions, AuthenticationProvider? authenticationProvider)
+			: base(clientName, exchangeOptions, authenticationProvider)
 		{
 			manualParseError = true;
 		}

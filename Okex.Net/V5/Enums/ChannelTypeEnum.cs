@@ -4,6 +4,7 @@ namespace Okex.Net.V5.Enums
 	{
 		OrderBook,
 		Ticker,
-		MarkPrice
+		MarkPrice,
+		Order
 	}
 }

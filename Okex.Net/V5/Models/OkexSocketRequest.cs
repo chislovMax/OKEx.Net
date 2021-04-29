@@ -4,7 +4,7 @@ namespace Okex.Net.V5.Models
 {
 	public class OkexSocketRequest
 	{
-		public OkexSocketRequest(string option, object[] args)
+		public OkexSocketRequest(string option, params object[] args)
 		{
 			Arguments = args;
 			Options = option;

@@ -1,36 +1,38 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Security.Authentication;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using CryptoExchange.Net;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using NLog;
+using Okex.Net.CoreObjects;
 using Okex.Net.Helpers;
 using Okex.Net.V5.Configs;
 using Okex.Net.V5.Enums;
 using Okex.Net.V5.Models;
 using WebSocket4Net;
 using ErrorEventArgs = SuperSocket.ClientEngine.ErrorEventArgs;
-using ILogger = Microsoft.Extensions.Logging.ILogger;
-using OkexSocketRequest = Okex.Net.V5.Models.OkexSocketRequest;
-using OkexSocketResponse = Okex.Net.V5.Models.OkexSocketResponse;
 
 namespace Okex.Net.V5.Clients
 {
-	public class OkexSocketClientPublic
+	public class OkexSocketClientPrivate
 	{
-		public OkexSocketClientPublic(ILogger logger) : this(logger, new SocketClientConfig())
+		public OkexSocketClientPrivate(OkexCredential credential) : this(credential, new SocketClientConfig())
 		{
 		}
 
-		public OkexSocketClientPublic(ILogger logger, SocketClientConfig clientConfig)
+		public OkexSocketClientPrivate(OkexCredential credential, SocketClientConfig clientConfig)
 		{
-			_logger = logger;
 			_clientConfig = clientConfig;
+			_credential = credential;
 
 			InitProcessors();
 			CreateSocket();
@@ -42,27 +44,25 @@ namespace Okex.Net.V5.Clients
 		public DateTime LastMessageDate { get; private set; } = DateTime.MinValue;
 
 		internal event Action ConnectionBroken = () => { };
-		internal event Action<OkexOrderBook> BookPriceUpdate = bookPrice => { };
-		internal event Action<OkexTicker> TickerUpdate = ticker => { };
-		internal event Action<OkexMarkPrice> MarkPriceUpdate = markPrice => { };
+		internal event Action<OkexOrderDetails> OrderUpdate = order => { };
 		internal event Action<ErrorMessage> ErrorReceived = error => { };
 
 		private bool _onKilled;
 
-		private readonly ILogger _logger;
+		private readonly Logger _logger = LogManager.GetCurrentClassLogger();
 		private readonly SocketClientConfig _clientConfig;
 
 		private WebSocket _ws;
+		private readonly OkexCredential _credential;
 		private int _reconnectTime => _clientConfig.SocketReconnectionTimeMs;
 		private readonly List<OkexChannel> _channels = new List<OkexChannel>();
 		private readonly Dictionary<string, ChannelTypeEnum> _channelTypes = new Dictionary<string, ChannelTypeEnum>
 		{
-			{"books5", ChannelTypeEnum.OrderBook},
-			{"tickers", ChannelTypeEnum.Ticker},
-			{"mark-price", ChannelTypeEnum.MarkPrice}
+			{"orders", ChannelTypeEnum.Order},
 		};
 
-		private string BaseUrl => _clientConfig.IsTestNet ? _clientConfig.DemoUrlPublic : _clientConfig.UrlPublic;
+		private string BaseUrl => _clientConfig.IsTestNet ? _clientConfig.DemoUrlPrivate : _clientConfig.UrlPrivate;
+
 
 		#region Connection
 
@@ -75,9 +75,9 @@ namespace Okex.Net.V5.Clients
 					return;
 				}
 
-				_logger.LogTrace($"Socket ({Name}) {Id} connecting... (state: {_ws.State})");
+				_logger.Trace($"Socket ({Name}) {Id} connecting... (state: {_ws.State})");
 				_ws.Open();
-				_logger.LogTrace($"Socket ({Name}) {Id} connected... (state: {_ws.State})");
+				_logger.Trace($"Socket ({Name}) {Id} connected... (state: {_ws.State})");
 			}
 			catch (PlatformNotSupportedException)
 			{
@@ -89,7 +89,7 @@ namespace Okex.Net.V5.Clients
 			}
 			catch (Exception e)
 			{
-				_logger.LogTrace($"Socket ({Name}) {Id}  connect failed {e.GetType().Name} (state: {_ws.State}): {e.Message}");
+				_logger.Trace($"Socket ({Name}) {Id}  connect failed {e.GetType().Name} (state: {_ws.State}): {e.Message}");
 				throw;
 			}
 		}
@@ -101,9 +101,9 @@ namespace Okex.Net.V5.Clients
 				return;
 			}
 
-			_logger.LogTrace($"Socket ({Name}) {Id} disconnecting... (state: {_ws.State})");
+			_logger.Trace($"Socket ({Name}) {Id} disconnecting... (state: {_ws.State})");
 			_ws.Close();
-			_logger.LogTrace($"Socket ({Name}) {Id} disconnected... (state: {_ws.State})");
+			_logger.Trace($"Socket ({Name}) {Id} disconnected... (state: {_ws.State})");
 		}
 
 		public void Reconnect()
@@ -122,7 +122,7 @@ namespace Okex.Net.V5.Clients
 
 		public void Kill()
 		{
-			_logger.LogTrace("Socket killing...");
+			_logger.Trace("Socket killing...");
 
 			_onKilled = true;
 			TryDisconnect();
@@ -131,13 +131,31 @@ namespace Okex.Net.V5.Clients
 
 		private void OnSocketOpened(object sender, EventArgs e)
 		{
-			_logger.LogTrace($"Socket ({Name}) {Id} is open (state: {_ws.State}): resubscribing...");
+			_logger.Trace($"Socket ({Name}) {Id} is open (state: {_ws.State}): resubscribing...");
+			Auth();
 			SendSubscribeToChannels();
+		}
+
+		private void Auth()
+		{
+			if (_credential is null)
+			{
+				return;
+			}
+
+			var time = (DateTime.UtcNow.ToUnixTimeMilliSeconds() / 1000.0m).ToString(CultureInfo.InvariantCulture);
+			var signtext = time + "GET" + "/users/self/verify";
+			var hmacEncryptor = new HMACSHA256(Encoding.ASCII.GetBytes(_credential.SecretKey));
+			var signature = OkexAuthenticationProvider.Base64Encode(hmacEncryptor.ComputeHash(Encoding.UTF8.GetBytes(signtext)));
+			var loginRequest = new OkexLoginRequest(_credential.ApiKey, _credential.Password, time, signature);
+			var request = new OkexSocketRequest("login", loginRequest);
+
+			Send(request);
 		}
 
 		private void OnSocketClosed(object sender, EventArgs e)
 		{
-			_logger.LogTrace($"Socket ({Name}) {Id} OnSocketClosed... (state: {_ws.State})");
+			_logger.Trace($"Socket ({Name}) {Id} OnSocketClosed... (state: {_ws.State})");
 			ReconnectingSocket();
 		}
 
@@ -150,7 +168,7 @@ namespace Okex.Net.V5.Clients
 					Thread.Sleep(_reconnectTime);
 				}
 
-				_logger.LogTrace($"Try connect in reconnecting ({Name}) {Id} failed (state: {_ws.State})");
+				_logger.Trace($"Try connect in reconnecting ({Name}) {Id} failed (state: {_ws.State})");
 				Connect();
 			}
 			catch (Exception e)
@@ -162,14 +180,14 @@ namespace Okex.Net.V5.Clients
 					return;
 				}
 
-				_logger.LogTrace($"Reconnect ({Name}) {Id} failed (state: {_ws.State}): {errorMessage}");
+				_logger.Trace($"Reconnect ({Name}) {Id} failed (state: {_ws.State}): {errorMessage}");
 				Task.Run(ReconnectingSocket);
 			}
 		}
 
 		private void SocketOnError(object sender, ErrorEventArgs e)
 		{
-			_logger.LogTrace($"Socket ({Name}) {Id} (state: {_ws.State}) recieve error: {e.Exception.GetFullTextWithInner()}");
+			_logger.Trace($"Socket ({Name}) {Id} (state: {_ws.State}) recieve error: {e.Exception.GetFullTextWithInner()}");
 		}
 
 		private void TryDisconnect()
@@ -180,8 +198,8 @@ namespace Okex.Net.V5.Clients
 			}
 			catch (Exception e)
 			{
-				_logger.LogTrace($"Socket ({Name}) {Id} (state: {_ws.State}) error in disconnect: {e.Message}");
-				_logger.LogTrace($"Socket ({Name}) {Id} (state: {_ws.State}) error in disconnect: {e.GetFullTextWithInner()}");
+				_logger.Trace($"Socket ({Name}) {Id} (state: {_ws.State}) error in disconnect: {e.Message}");
+				_logger.Trace($"Socket ({Name}) {Id} (state: {_ws.State}) error in disconnect: {e.GetFullTextWithInner()}");
 			}
 		}
 
@@ -201,39 +219,16 @@ namespace Okex.Net.V5.Clients
 
 		#endregion
 
-		public void SubscribeToTicker(string instrument)
+		public void SubscribeOrders()
 		{
-			AddChannel(GetTickerChannel(instrument));
+			AddChannel(GetOrderChannel());
 			SendSubscribeToChannels();
 		}
 
-		public void SubscribeToBookPrice(string instrumentName)
-		{
-			AddChannel(GetBookPriceChannel(instrumentName));
-			SendSubscribeToChannels();
-		}
-
-		public void SubscribeToMarkPrice(string instrumentName)
-		{
-			AddChannel(GetMarkPriceChannel(instrumentName));
-			SendSubscribeToChannels();
-		}
 		public void UnsubscribeBookPriceChannel(string instrumentName)
 		{
 			var orderBookChannel = GetBookPriceChannel(instrumentName);
 			UnsubscribeChannel(orderBookChannel);
-		}
-
-		public void UnsubscribeTickerChannel(string instrumentName)
-		{
-			var tickerChannel = GetTickerChannel(instrumentName);
-			UnsubscribeChannel(tickerChannel);
-		}
-
-		public void UnsubscribeMarkPriceChannel(string instrumentName)
-		{
-			var markPriceChannel = GetMarkPriceChannel(instrumentName);
-			UnsubscribeChannel(markPriceChannel);
 		}
 
 		#region Generate channel strings
@@ -246,20 +241,12 @@ namespace Okex.Net.V5.Clients
 					 ?? new OkexChannel(channelName, new SocketInstrumentRequest("books5", instrument));
 		}
 
-		private OkexChannel GetTickerChannel(string instrument)
+		private OkexChannel GetOrderChannel()
 		{
-			var channelName = $"tickers{instrument}";
+			var channelName = $"ordersany";
 			var okexChannel = _channels.FirstOrDefault(x => x.ChannelName == channelName);
 			return okexChannel
-			       ?? new OkexChannel(channelName, new SocketInstrumentRequest("tickers", instrument));
-		}
-
-		private OkexChannel GetMarkPriceChannel(string instrument)
-		{
-			var channelName = $"mark-price{instrument}";
-			var okexChannel = _channels.FirstOrDefault(x => x.ChannelName == channelName);
-			return okexChannel
-			       ?? new OkexChannel(channelName, new SocketInstrumentRequest("mark-price", instrument));
+					 ?? new OkexChannel(channelName, new SocketOrderRequest("orders", "FUTURES", "BTC-USD-210430"));
 		}
 
 		#endregion
@@ -292,7 +279,7 @@ namespace Okex.Net.V5.Clients
 
 		private void UnsubscribeChannel(OkexChannel channel)
 		{
-			var request = new OkexSocketRequest("unsubscribe", new[] { channel.Params });
+			var request = new OkexSocketRequest("unsubscribe", channel.Params);
 			Send(request);
 			_channels.Remove(channel);
 		}
@@ -314,9 +301,7 @@ namespace Okex.Net.V5.Clients
 			};
 			_channelProcessorActions = new Dictionary<ChannelTypeEnum, Action<OkexSocketResponse>>
 			{
-				{ChannelTypeEnum.OrderBook, ProcessBookPrice},
-				{ChannelTypeEnum.Ticker, ProcessTicker},
-				{ChannelTypeEnum.MarkPrice, ProcessMarkPrice}
+				{ChannelTypeEnum.Order, ProcessOrder},
 			};
 		}
 
@@ -333,7 +318,7 @@ namespace Okex.Net.V5.Clients
 			}
 			catch (Exception exception)
 			{
-				_logger.LogTrace($"{nameof(SocketClient)} ERROR ON PROCESS MESSAGE.\n {message} \n {exception.GetFullTextWithInner()}.");
+				_logger.Trace($"{nameof(SocketClient)} ERROR ON PROCESS MESSAGE.\n {message} \n {exception.GetFullTextWithInner()}.");
 			}
 		}
 
@@ -349,7 +334,7 @@ namespace Okex.Net.V5.Clients
 
 			if (!_eventProcessorActions.TryGetValue(response.Event, out var action))
 			{
-				_logger.LogTrace($"Unhandled message: {message}");
+				_logger.Trace($"Unhandled message: {message}");
 				return;
 			}
 
@@ -376,60 +361,34 @@ namespace Okex.Net.V5.Clients
 
 		private void ProcessSubscribe(OkexSocketResponse response)
 		{
-			_logger.LogTrace($"SUBSCRIBED to channels {JsonConvert.SerializeObject(response.Argument)}");
+			_logger.Trace($"SUBSCRIBED to channels {JsonConvert.SerializeObject(response.Argument)}");
 		}
 
 		private void ProcessUnsubscribe(OkexSocketResponse socketResponse)
 		{
-			_logger.LogTrace($"UNSUBSCRIBED from a channels {JsonConvert.SerializeObject(socketResponse.Argument)}");
+			_logger.Trace($"UNSUBSCRIBED from a channels {JsonConvert.SerializeObject(socketResponse.Argument)}");
 		}
 
 		private void ProcessError(OkexSocketResponse response)
 		{
-			_logger.LogTrace(JsonConvert.SerializeObject(response));
+			_logger.Trace(JsonConvert.SerializeObject(response));
 			ErrorReceived.Invoke(new ErrorMessage(response.Code, response.Message));
 		}
 
-		private void ProcessBookPrice(OkexSocketResponse response)
+		private void ProcessOrder(OkexSocketResponse response)
 		{
 			var data = response.Data?.FirstOrDefault();
-			var bookPrice = data?.ToObject<OkexOrderBook>();
-			var instrument = response.Argument["instId"]?.Value<string>();
-			if (bookPrice is null || string.IsNullOrWhiteSpace(instrument))
+			var orders = data?.ToObject<OkexOrderDetails[]>();
+			if (orders is null || !orders.Any())
 			{
 				return;
 			}
 
-			bookPrice.InstrumentName = instrument;
-			BookPriceUpdate.Invoke(bookPrice);
-		}
-
-		private void ProcessTicker(OkexSocketResponse response)
-		{
-			var data = response.Data?.FirstOrDefault();
-			var ticker = data?.ToObject<OkexTicker>();
-			var instrument = response.Argument["instId"]?.Value<string>();
-			if (ticker is null || string.IsNullOrWhiteSpace(instrument))
+			foreach (var order in orders)
 			{
-				return;
+				OrderUpdate.Invoke(order);
+				_logger.Trace(JsonConvert.SerializeObject(order));
 			}
-
-			ticker.InstrumentName = instrument;
-			TickerUpdate.Invoke(ticker);
-		}
-
-		private void ProcessMarkPrice(OkexSocketResponse response)
-		{
-			var data = response.Data?.FirstOrDefault();
-			var markPrice = data?.ToObject<OkexMarkPrice>();
-			var instrument = response.Argument["instId"]?.Value<string>();
-			if (markPrice is null || string.IsNullOrWhiteSpace(instrument))
-			{
-				return;
-			}
-
-			markPrice.InstrumentName = instrument;
-			MarkPriceUpdate.Invoke(markPrice);
 		}
 
 		#endregion
