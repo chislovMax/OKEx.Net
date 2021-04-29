@@ -6,12 +6,16 @@ using System.Security.Authentication;
 using System.Threading;
 using System.Threading.Tasks;
 using CryptoExchange.Net;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using NLog;
+using Okex.Net.Helpers;
+using Okex.Net.V5.Configs;
 using Okex.Net.V5.Enums;
 using Okex.Net.V5.Models;
 using WebSocket4Net;
+using ErrorEventArgs = SuperSocket.ClientEngine.ErrorEventArgs;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 using OkexSocketRequest = Okex.Net.V5.Models.OkexSocketRequest;
 using OkexSocketResponse = Okex.Net.V5.Models.OkexSocketResponse;
 
@@ -19,13 +23,21 @@ namespace Okex.Net.V5.Clients
 {
 	public class OkexSocketClientPublic
 	{
-		public OkexSocketClientPublic()
+		public OkexSocketClientPublic(ILogger logger) : this(logger, new SocketClientConfig())
 		{
+		}
+
+		public OkexSocketClientPublic(ILogger logger, SocketClientConfig clientConfig)
+		{
+			_logger = logger;
+			_clientConfig = clientConfig;
+
 			InitProcessors();
 			CreateSocket();
 		}
 
 		public Guid Id { get; } = Guid.NewGuid();
+		public string Name { get; set; } = "Unnamed";
 		public bool SocketConnected => _ws.State == WebSocketState.Open;
 		public DateTime LastMessageDate { get; private set; } = DateTime.MinValue;
 
@@ -37,9 +49,11 @@ namespace Okex.Net.V5.Clients
 
 		private bool _onKilled;
 
+		private readonly ILogger _logger;
+		private readonly SocketClientConfig _clientConfig;
+
 		private WebSocket _ws;
 		private readonly int _reconnectTime;
-		private readonly Logger _logger = LogManager.GetCurrentClassLogger();
 		private readonly List<OkexChannel> _channels = new List<OkexChannel>();
 		private readonly Dictionary<string, ChannelTypeEnum> _channelTypes = new Dictionary<string, ChannelTypeEnum>
 		{
@@ -48,8 +62,7 @@ namespace Okex.Net.V5.Clients
 			{"mark-price", ChannelTypeEnum.MarkPrice}
 		};
 
-		private const string BaseUrl = "wss://www.deribit.com/ws/api/v2";
-		private const string TestBaseUrl = "wss://wsaws.okex.com:8443/ws/v5/public";
+		private string BaseUrl => _clientConfig.IsTestNet ? _clientConfig.DemoUrl : _clientConfig.Url;
 
 		#region Connection
 
@@ -62,9 +75,9 @@ namespace Okex.Net.V5.Clients
 					return;
 				}
 
-				//_logger.LogTrace($"Socket ({Name}) {Id} connecting... (state: {_ws.State})");
+				_logger.LogTrace($"Socket ({Name}) {Id} connecting... (state: {_ws.State})");
 				_ws.Open();
-				//_logger.LogTrace($"Socket ({Name}) {Id} connected... (state: {_ws.State})");
+				_logger.LogTrace($"Socket ({Name}) {Id} connected... (state: {_ws.State})");
 			}
 			catch (PlatformNotSupportedException)
 			{
@@ -76,7 +89,7 @@ namespace Okex.Net.V5.Clients
 			}
 			catch (Exception e)
 			{
-				//_logger.LogTrace($"Socket ({Name}) {Id}  connect failed {e.GetType().Name} (state: {_ws.State}): {e.Message}");
+				_logger.LogTrace($"Socket ({Name}) {Id}  connect failed {e.GetType().Name} (state: {_ws.State}): {e.Message}");
 				throw;
 			}
 		}
@@ -88,15 +101,15 @@ namespace Okex.Net.V5.Clients
 				return;
 			}
 
-			//_logger.LogTrace($"Socket ({Name}) {Id} disconnecting... (state: {_ws.State})");
+			_logger.LogTrace($"Socket ({Name}) {Id} disconnecting... (state: {_ws.State})");
 			_ws.Close();
-			//_logger.LogTrace($"Socket ({Name}) {Id} disconnected... (state: {_ws.State})");
+			_logger.LogTrace($"Socket ({Name}) {Id} disconnected... (state: {_ws.State})");
 		}
 
 		public void Reconnect()
 		{
 			var ws = _ws;
-			//_ws.Error -= SocketOnError;
+			_ws.Error -= SocketOnError;
 			_ws.Opened -= OnSocketOpened;
 			_ws.Closed -= OnSocketClosed;
 			_ws.MessageReceived -= OnSocketGetMessage;
@@ -109,7 +122,7 @@ namespace Okex.Net.V5.Clients
 
 		public void Kill()
 		{
-			//_logger.LogTrace("Socket killing...");
+			_logger.LogTrace("Socket killing...");
 
 			_onKilled = true;
 			TryDisconnect();
@@ -118,15 +131,13 @@ namespace Okex.Net.V5.Clients
 
 		private void OnSocketOpened(object sender, EventArgs e)
 		{
-			//_logger.LogTrace($"Socket ({Name}) {Id} is open (state: {_ws.State}): resubscribing...");
-			//Auth();
-			//SendSubscribeToPublicChannels();
-			//SendSetHeartbeat();
+			_logger.LogTrace($"Socket ({Name}) {Id} is open (state: {_ws.State}): resubscribing...");
+			SendSubscribeToChannels();
 		}
 
 		private void OnSocketClosed(object sender, EventArgs e)
 		{
-			//_logger.LogTrace($"Socket ({Name}) {Id} OnSocketClosed... (state: {_ws.State})");
+			_logger.LogTrace($"Socket ({Name}) {Id} OnSocketClosed... (state: {_ws.State})");
 			ReconnectingSocket();
 		}
 
@@ -139,28 +150,26 @@ namespace Okex.Net.V5.Clients
 					Thread.Sleep(_reconnectTime);
 				}
 
-				//_logger.LogTrace($"Try connect in reconnecting ({Name}) {Id} failed (state: {_ws.State})");
+				_logger.LogTrace($"Try connect in reconnecting ({Name}) {Id} failed (state: {_ws.State})");
 				Connect();
 			}
 			catch (Exception e)
 			{
-				var errorMessage = e.Message;
-				//var errorMessage = e.GetFullTextWithInner();
+				var errorMessage = e.GetFullTextWithInner();
 				if (errorMessage.Contains("you needn't connect again!")
 					 || errorMessage.Contains("cannot connect again!"))
 				{
 					return;
 				}
 
-				//_logger.LogTrace($"Reconnect ({Name}) {Id} failed (state: {_ws.State}): {errorMessage}");
+				_logger.LogTrace($"Reconnect ({Name}) {Id} failed (state: {_ws.State}): {errorMessage}");
 				Task.Run(ReconnectingSocket);
 			}
 		}
 
 		private void SocketOnError(object sender, ErrorEventArgs e)
 		{
-			//_logger.LogTrace($"Socket ({Name}) {Id} (state: {_ws.State}) recieve error: {e.GetException().Message}");
-			//_logger.LogTrace($"Socket ({Name}) {Id} (state: {_ws.State}) recieve error: {e.GetException().GetFullTextWithInner()}");
+			_logger.LogTrace($"Socket ({Name}) {Id} (state: {_ws.State}) recieve error: {e.Exception.GetFullTextWithInner()}");
 		}
 
 		private void TryDisconnect()
@@ -171,20 +180,20 @@ namespace Okex.Net.V5.Clients
 			}
 			catch (Exception e)
 			{
-				//_logger.LogTrace($"Socket ({Name}) {Id} (state: {_ws.State}) error in disconnect: {e.Message}");
-				//_logger.LogTrace($"Socket ({Name}) {Id} (state: {_ws.State}) error in disconnect: {e.GetFullTextWithInner()}");
+				_logger.LogTrace($"Socket ({Name}) {Id} (state: {_ws.State}) error in disconnect: {e.Message}");
+				_logger.LogTrace($"Socket ({Name}) {Id} (state: {_ws.State}) error in disconnect: {e.GetFullTextWithInner()}");
 			}
 		}
 
 		private void CreateSocket()
 		{
-			_ws = new WebSocket(/*_config.IsTestApi*/ true ? TestBaseUrl : BaseUrl, sslProtocols: SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls)
+			_ws = new WebSocket(BaseUrl, sslProtocols: SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls)
 			{
 				EnableAutoSendPing = true,
 				AutoSendPingInterval = 10
 			};
 
-			//_ws.Error += SocketOnError;
+			_ws.Error += SocketOnError;
 			_ws.Opened += OnSocketOpened;
 			_ws.Closed += OnSocketClosed;
 			_ws.MessageReceived += OnSocketGetMessage;
@@ -329,8 +338,7 @@ namespace Okex.Net.V5.Clients
 			}
 			catch (Exception exception)
 			{
-				_logger.Trace($"{nameof(SocketClient)} ERROR ON PROCESS MESSAGE.\n {message} \n {exception.Message}.");
-				//_logger.LogTrace($"{nameof(SocketClient)} ERROR ON PROCESS MESSAGE.\n {message} \n {exception.GetFullTextWithInner()}.");
+				_logger.LogTrace($"{nameof(SocketClient)} ERROR ON PROCESS MESSAGE.\n {message} \n {exception.GetFullTextWithInner()}.");
 			}
 		}
 
@@ -346,7 +354,7 @@ namespace Okex.Net.V5.Clients
 
 			if (!_eventProcessorActions.TryGetValue(response.Event, out var action))
 			{
-				_logger.Trace($"Unhandled message: {message}");
+				_logger.LogTrace($"Unhandled message: {message}");
 				return;
 			}
 
@@ -373,17 +381,17 @@ namespace Okex.Net.V5.Clients
 
 		private void ProcessSubscribe(OkexSocketResponse response)
 		{
-			_logger.Trace($"SUBSCRIBED to channels {JsonConvert.SerializeObject(response.Argument)}");
+			_logger.LogTrace($"SUBSCRIBED to channels {JsonConvert.SerializeObject(response.Argument)}");
 		}
 
 		private void ProcessUnsubscribe(OkexSocketResponse socketResponse)
 		{
-			_logger.Trace($"UNSUBSCRIBED from a channels {JsonConvert.SerializeObject(socketResponse.Argument)}");
+			_logger.LogTrace($"UNSUBSCRIBED from a channels {JsonConvert.SerializeObject(socketResponse.Argument)}");
 		}
 
 		private void ProcessError(OkexSocketResponse response)
 		{
-			_logger.Trace(JsonConvert.SerializeObject(response));
+			_logger.LogTrace(JsonConvert.SerializeObject(response));
 			ErrorReceived.Invoke(new ErrorMessage(response.Code, response.Message));
 		}
 

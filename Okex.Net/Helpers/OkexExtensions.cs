@@ -221,8 +221,32 @@ namespace Okex.Net.Helpers
             return !@this.IsOneOf(values);
         }
 
-        #endregion
+		#endregion
 
-    }
+		public static string GetShortText(this Exception e)
+		{
+			return e.Message;
+		}
+
+		public static string GetFullText(this Exception e)
+		{
+			return e.GetShortText() + $"\nStackTrace: {e?.StackTrace}";
+		}
+
+		public static string GetFullTextWithInner(this Exception e)
+		{
+			var result = e.GetFullText();
+			var lvl = 1;
+			while (e?.InnerException != null)
+			{
+				result += "\n" + new string('\t', lvl) + "Inner exception " + e.InnerException.GetFullText();
+				e = e.InnerException;
+				lvl++;
+			}
+
+			return result;
+		}
+
+	}
 
 }
