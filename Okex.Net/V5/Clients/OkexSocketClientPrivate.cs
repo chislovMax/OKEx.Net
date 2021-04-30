@@ -9,9 +9,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using CryptoExchange.Net;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using NLog;
 using Okex.Net.CoreObjects;
 using Okex.Net.Helpers;
 using Okex.Net.V5.Configs;
@@ -24,12 +24,13 @@ namespace Okex.Net.V5.Clients
 {
 	public class OkexSocketClientPrivate
 	{
-		public OkexSocketClientPrivate(OkexCredential credential) : this(credential, new SocketClientConfig())
+		public OkexSocketClientPrivate(ILogger logger, OkexCredential credential) : this(logger, credential, new SocketClientConfig())
 		{
 		}
 
-		public OkexSocketClientPrivate(OkexCredential credential, SocketClientConfig clientConfig)
+		public OkexSocketClientPrivate(ILogger logger, OkexCredential credential, SocketClientConfig clientConfig)
 		{
+			_logger = logger;
 			_clientConfig = clientConfig;
 			_credential = credential;
 
@@ -49,7 +50,7 @@ namespace Okex.Net.V5.Clients
 
 		private bool _onKilled;
 
-		private readonly Logger _logger = LogManager.GetCurrentClassLogger();
+		private readonly ILogger _logger;
 		private readonly SocketClientConfig _clientConfig;
 
 		private WebSocket _ws;
@@ -76,9 +77,9 @@ namespace Okex.Net.V5.Clients
 					return;
 				}
 
-				_logger.Trace($"Socket ({Name}) {Id} connecting... (state: {_ws.State})");
+				_logger.LogTrace($"Socket ({Name}) {Id} connecting... (state: {_ws.State})");
 				_ws.Open();
-				_logger.Trace($"Socket ({Name}) {Id} connected... (state: {_ws.State})");
+				_logger.LogTrace($"Socket ({Name}) {Id} connected... (state: {_ws.State})");
 			}
 			catch (PlatformNotSupportedException)
 			{
@@ -90,7 +91,7 @@ namespace Okex.Net.V5.Clients
 			}
 			catch (Exception e)
 			{
-				_logger.Trace($"Socket ({Name}) {Id}  connect failed {e.GetType().Name} (state: {_ws.State}): {e.Message}");
+				_logger.LogTrace($"Socket ({Name}) {Id}  connect failed {e.GetType().Name} (state: {_ws.State}): {e.Message}");
 				throw;
 			}
 		}
@@ -102,9 +103,9 @@ namespace Okex.Net.V5.Clients
 				return;
 			}
 
-			_logger.Trace($"Socket ({Name}) {Id} disconnecting... (state: {_ws.State})");
+			_logger.LogTrace($"Socket ({Name}) {Id} disconnecting... (state: {_ws.State})");
 			_ws.Close();
-			_logger.Trace($"Socket ({Name}) {Id} disconnected... (state: {_ws.State})");
+			_logger.LogTrace($"Socket ({Name}) {Id} disconnected... (state: {_ws.State})");
 		}
 
 		public void Reconnect()
@@ -123,7 +124,7 @@ namespace Okex.Net.V5.Clients
 
 		public void Kill()
 		{
-			_logger.Trace("Socket killing...");
+			_logger.LogTrace("Socket killing...");
 
 			_onKilled = true;
 			TryDisconnect();
@@ -132,7 +133,7 @@ namespace Okex.Net.V5.Clients
 
 		private void OnSocketOpened(object sender, EventArgs e)
 		{
-			_logger.Trace($"Socket ({Name}) {Id} is open (state: {_ws.State}): resubscribing...");
+			_logger.LogTrace($"Socket ({Name}) {Id} is open (state: {_ws.State}): resubscribing...");
 			Auth();
 			SendSubscribeToChannels();
 		}
@@ -155,7 +156,7 @@ namespace Okex.Net.V5.Clients
 
 		private void OnSocketClosed(object sender, EventArgs e)
 		{
-			_logger.Trace($"Socket ({Name}) {Id} OnSocketClosed... (state: {_ws.State})");
+			_logger.LogTrace($"Socket ({Name}) {Id} OnSocketClosed... (state: {_ws.State})");
 			ReconnectingSocket();
 		}
 
@@ -168,7 +169,7 @@ namespace Okex.Net.V5.Clients
 					Thread.Sleep(_reconnectTime);
 				}
 
-				_logger.Trace($"Try connect in reconnecting ({Name}) {Id} failed (state: {_ws.State})");
+				_logger.LogTrace($"Try connect in reconnecting ({Name}) {Id} failed (state: {_ws.State})");
 				Connect();
 			}
 			catch (Exception e)
@@ -180,14 +181,14 @@ namespace Okex.Net.V5.Clients
 					return;
 				}
 
-				_logger.Trace($"Reconnect ({Name}) {Id} failed (state: {_ws.State}): {errorMessage}");
+				_logger.LogTrace($"Reconnect ({Name}) {Id} failed (state: {_ws.State}): {errorMessage}");
 				Task.Run(ReconnectingSocket);
 			}
 		}
 
 		private void SocketOnError(object sender, ErrorEventArgs e)
 		{
-			_logger.Trace($"Socket ({Name}) {Id} (state: {_ws.State}) recieve error: {e.Exception.GetFullTextWithInner()}");
+			_logger.LogTrace($"Socket ({Name}) {Id} (state: {_ws.State}) recieve error: {e.Exception.GetFullTextWithInner()}");
 		}
 
 		private void TryDisconnect()
@@ -198,8 +199,8 @@ namespace Okex.Net.V5.Clients
 			}
 			catch (Exception e)
 			{
-				_logger.Trace($"Socket ({Name}) {Id} (state: {_ws.State}) error in disconnect: {e.Message}");
-				_logger.Trace($"Socket ({Name}) {Id} (state: {_ws.State}) error in disconnect: {e.GetFullTextWithInner()}");
+				_logger.LogTrace($"Socket ({Name}) {Id} (state: {_ws.State}) error in disconnect: {e.Message}");
+				_logger.LogTrace($"Socket ({Name}) {Id} (state: {_ws.State}) error in disconnect: {e.GetFullTextWithInner()}");
 			}
 		}
 
@@ -343,7 +344,7 @@ namespace Okex.Net.V5.Clients
 			}
 			catch (Exception exception)
 			{
-				_logger.Trace($"{nameof(SocketClient)} ERROR ON PROCESS MESSAGE.\n {message} \n {exception.GetFullTextWithInner()}.");
+				_logger.LogTrace($"{nameof(SocketClient)} ERROR ON PROCESS MESSAGE.\n {message} \n {exception.GetFullTextWithInner()}.");
 			}
 		}
 
@@ -359,7 +360,7 @@ namespace Okex.Net.V5.Clients
 
 			if (!_eventProcessorActions.TryGetValue(response.Event, out var action))
 			{
-				_logger.Trace($"Unhandled message: {message}");
+				_logger.LogTrace($"Unhandled message: {message}");
 				return;
 			}
 
@@ -386,17 +387,17 @@ namespace Okex.Net.V5.Clients
 
 		private void ProcessSubscribe(OkexSocketResponse response)
 		{
-			_logger.Trace($"SUBSCRIBED to channels {JsonConvert.SerializeObject(response.Argument)}");
+			_logger.LogTrace($"SUBSCRIBED to channels {JsonConvert.SerializeObject(response.Argument)}");
 		}
 
 		private void ProcessUnsubscribe(OkexSocketResponse socketResponse)
 		{
-			_logger.Trace($"UNSUBSCRIBED from a channels {JsonConvert.SerializeObject(socketResponse.Argument)}");
+			_logger.LogTrace($"UNSUBSCRIBED from a channels {JsonConvert.SerializeObject(socketResponse.Argument)}");
 		}
 
 		private void ProcessError(OkexSocketResponse response)
 		{
-			_logger.Trace(JsonConvert.SerializeObject(response));
+			_logger.LogTrace(JsonConvert.SerializeObject(response));
 			ErrorReceived.Invoke(new ErrorMessage(response.Code, response.Message));
 		}
 
@@ -411,7 +412,7 @@ namespace Okex.Net.V5.Clients
 			foreach (var order in orders)
 			{
 				OrderUpdate.Invoke(order);
-				_logger.Trace(JsonConvert.SerializeObject(order));
+				_logger.LogTrace(JsonConvert.SerializeObject(order));
 			}
 		}
 
@@ -426,7 +427,7 @@ namespace Okex.Net.V5.Clients
 			foreach (var balance in balances)
 			{
 				AccountUpdate.Invoke(balance);
-				_logger.Trace(JsonConvert.SerializeObject(balance));
+				_logger.LogTrace(JsonConvert.SerializeObject(balance));
 			}
 		}
 
