@@ -12,6 +12,6 @@ namespace Okex.Net.V5.Models
 		[JsonProperty("markPx")]
 		public decimal? MarkPrice { get; set; }
 		[JsonProperty("ts")]
-		public string TimeStamp { get; set; }
+		public string Timestamp { get; set; }
 	}
 }
