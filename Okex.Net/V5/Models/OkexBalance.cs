@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Newtonsoft.Json;
 
 namespace Okex.Net.V5.Models
@@ -22,7 +21,7 @@ namespace Okex.Net.V5.Models
 		[JsonProperty("mgnRatio")]
 		public decimal? MarginRatio { get; set; }
 		[JsonProperty("details")]
-		public ICollection<OkexAccountDetails> Details { get; set; }
+		public OkexAccountDetails[] Details { get; set; }
 
 	}
 }

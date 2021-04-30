@@ -54,7 +54,7 @@ namespace Okex.Net.V5.Clients
 
 		private WebSocket _ws;
 		private int _reconnectTime => _clientConfig.SocketReconnectionTimeMs;
-		private readonly List<OkexChannel> _channels = new List<OkexChannel>();
+		private readonly Dictionary<string, OkexChannel> _subscribedChannels = new Dictionary<string, OkexChannel>();
 		private readonly Dictionary<string, ChannelTypeEnum> _channelTypes = new Dictionary<string, ChannelTypeEnum>
 		{
 			{"books5", ChannelTypeEnum.OrderBook},
@@ -201,26 +201,37 @@ namespace Okex.Net.V5.Clients
 
 		#endregion
 
-		public void SubscribeToTicker(string instrument)
+		public void SubscribeToTicker(string instrumentName)
 		{
-			AddChannel(GetTickerChannel(instrument));
+			if (string.IsNullOrWhiteSpace(instrumentName))
+				throw new ArgumentException("Instrument name must not be null or empty", instrumentName);
+
+			AddChannel(GetTickerChannel(instrumentName));
 			SendSubscribeToChannels();
 		}
 
-		public void SubscribeToBookPrice(string instrumentName)
+		public void SubscribeToBookPrice(string instrumentName, string orderBookType = "books5")
 		{
-			AddChannel(GetBookPriceChannel(instrumentName));
+			if (string.IsNullOrWhiteSpace(instrumentName))
+				throw new ArgumentException("Instrument name must not be null or empty", instrumentName);
+			if (string.IsNullOrWhiteSpace(orderBookType))
+				throw new ArgumentException("Order book type must not be null or empty", orderBookType);
+
+			AddChannel(GetBookPriceChannel(instrumentName, orderBookType));
 			SendSubscribeToChannels();
 		}
 
 		public void SubscribeToMarkPrice(string instrumentName)
 		{
+			if (string.IsNullOrWhiteSpace(instrumentName))
+				throw new ArgumentException("Instrument name must not be null or empty", instrumentName);
+
 			AddChannel(GetMarkPriceChannel(instrumentName));
 			SendSubscribeToChannels();
 		}
-		public void UnsubscribeBookPriceChannel(string instrumentName)
+		public void UnsubscribeBookPriceChannel(string instrumentName, string orderBookType)
 		{
-			var orderBookChannel = GetBookPriceChannel(instrumentName);
+			var orderBookChannel = GetBookPriceChannel(instrumentName, orderBookType);
 			UnsubscribeChannel(orderBookChannel);
 		}
 
@@ -238,28 +249,41 @@ namespace Okex.Net.V5.Clients
 
 		#region Generate channel strings
 
-		private OkexChannel GetBookPriceChannel(string instrument)
+		private OkexChannel GetBookPriceChannel(string instrumentName, string orderBookType)
 		{
-			var channelName = $"books5{instrument}";
-			var okexChannel = _channels.FirstOrDefault(x => x.ChannelName == channelName);
-			return okexChannel
-					 ?? new OkexChannel(channelName, new SocketInstrumentRequest("books5", instrument));
+			var channelName = $"{orderBookType}{instrumentName}";
+			if (_subscribedChannels.TryGetValue(channelName, out var channel))
+			{
+				return channel;
+			}
+
+			var channelArgs = new Dictionary<string, string> { { "channel", orderBookType }, { "instId", instrumentName } };
+
+			return new OkexChannel(channelName, channelArgs);
 		}
 
-		private OkexChannel GetTickerChannel(string instrument)
+		private OkexChannel GetTickerChannel(string instrumentName)
 		{
-			var channelName = $"tickers{instrument}";
-			var okexChannel = _channels.FirstOrDefault(x => x.ChannelName == channelName);
-			return okexChannel
-			       ?? new OkexChannel(channelName, new SocketInstrumentRequest("tickers", instrument));
+			var channelName = $"tickers{instrumentName}";
+			if (_subscribedChannels.TryGetValue(channelName, out var channel))
+			{
+				return channel;
+			}
+
+			var channelArgs = new Dictionary<string, string> { { "channel", "tickers" }, { "instId", instrumentName } };
+			return new OkexChannel(channelName, channelArgs);
 		}
 
 		private OkexChannel GetMarkPriceChannel(string instrument)
 		{
 			var channelName = $"mark-price{instrument}";
-			var okexChannel = _channels.FirstOrDefault(x => x.ChannelName == channelName);
-			return okexChannel
-			       ?? new OkexChannel(channelName, new SocketInstrumentRequest("mark-price", instrument));
+			if (_subscribedChannels.TryGetValue(channelName, out var channel))
+			{
+				return channel;
+			}
+
+			var channelArgs = new Dictionary<string, string> { { "channel", "mark-price" }, { "instId", instrument } };
+			return  new OkexChannel(channelName, channelArgs);
 		}
 
 		#endregion
@@ -268,17 +292,16 @@ namespace Okex.Net.V5.Clients
 
 		private void AddChannel(OkexChannel channel)
 		{
-			var channelParams = _channels.FirstOrDefault(x => x.ChannelName == channel.ChannelName);
-			if (channelParams is null)
+			if (!_subscribedChannels.TryGetValue(channel.ChannelName, out var _))
 			{
-				_channels.Add(channel);
+				_subscribedChannels.Add(channel.ChannelName, channel);
 			}
 		}
 
 		internal void SendSubscribeToChannels()
 		{
-			var channels = _channels
-				.Select(x => x.Params)
+			var channels = _subscribedChannels
+				.Select(x => x.Value.Params)
 				.ToArray();
 
 			if (!channels.Any())
@@ -292,9 +315,9 @@ namespace Okex.Net.V5.Clients
 
 		private void UnsubscribeChannel(OkexChannel channel)
 		{
-			var request = new OkexSocketRequest("unsubscribe", new[] { channel.Params });
+			var request = new OkexSocketRequest("unsubscribe", channel.Params);
 			Send(request);
-			_channels.Remove(channel);
+			_subscribedChannels.Remove(channel.ChannelName);
 		}
 
 		#endregion

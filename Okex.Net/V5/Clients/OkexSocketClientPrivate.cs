@@ -9,7 +9,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using CryptoExchange.Net;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NLog;
@@ -45,6 +44,7 @@ namespace Okex.Net.V5.Clients
 
 		internal event Action ConnectionBroken = () => { };
 		internal event Action<OkexOrderDetails> OrderUpdate = order => { };
+		internal event Action<OkexBalances> AccountUpdate = order => { };
 		internal event Action<ErrorMessage> ErrorReceived = error => { };
 
 		private bool _onKilled;
@@ -55,10 +55,11 @@ namespace Okex.Net.V5.Clients
 		private WebSocket _ws;
 		private readonly OkexCredential _credential;
 		private int _reconnectTime => _clientConfig.SocketReconnectionTimeMs;
-		private readonly List<OkexChannel> _channels = new List<OkexChannel>();
+		private readonly Dictionary<string, OkexChannel> _subscribedChannels = new Dictionary<string, OkexChannel>();
 		private readonly Dictionary<string, ChannelTypeEnum> _channelTypes = new Dictionary<string, ChannelTypeEnum>
 		{
 			{"orders", ChannelTypeEnum.Order},
+			{"account", ChannelTypeEnum.Account}
 		};
 
 		private string BaseUrl => _clientConfig.IsTestNet ? _clientConfig.DemoUrlPrivate : _clientConfig.UrlPrivate;
@@ -147,9 +148,8 @@ namespace Okex.Net.V5.Clients
 			var signtext = time + "GET" + "/users/self/verify";
 			var hmacEncryptor = new HMACSHA256(Encoding.ASCII.GetBytes(_credential.SecretKey));
 			var signature = OkexAuthenticationProvider.Base64Encode(hmacEncryptor.ComputeHash(Encoding.UTF8.GetBytes(signtext)));
-			var loginRequest = new OkexLoginRequest(_credential.ApiKey, _credential.Password, time, signature);
-			var request = new OkexSocketRequest("login", loginRequest);
 
+			var request = new OkexSocketRequest("login", new OkexLoginRequest(_credential.ApiKey, _credential.Password, time, signature));
 			Send(request);
 		}
 
@@ -219,53 +219,85 @@ namespace Okex.Net.V5.Clients
 
 		#endregion
 
-		public void SubscribeOrders()
+		public void SubscribeToChangeOrders(OrderInstrumentTypeEnum instrumentType, string underlying = "", string instrumentName = "")
 		{
-			AddChannel(GetOrderChannel());
+			AddChannel(GetOrderChannel(instrumentType, underlying, instrumentName));
 			SendSubscribeToChannels();
 		}
-	
-		public void UnsubscribeOrderChannel()
+
+		public void UnsubscribeChangeOrderChannel(OrderInstrumentTypeEnum instrumentType, string underlying = "", string instrumentName = "")
 		{
-			var orderChannel = GetOrderChannel();
+			var orderChannel = GetOrderChannel(instrumentType, underlying, instrumentName);
 			UnsubscribeChannel(orderChannel);
 		}
 
+		public void SubscribeToChangeAccount(string currency = "")
+		{
+			AddChannel(GetAccountChannel(currency));
+			SendSubscribeToChannels();
+		}
+
+		public void UnsubscribeToChangeAccountChannel(string currency = "")
+		{
+			var accountChannel = GetAccountChannel(currency);
+			UnsubscribeChannel(accountChannel);
+		}
 		#region Generate channel strings
 
-		private OkexChannel GetOrderChannel()
+		private OkexChannel GetOrderChannel(OrderInstrumentTypeEnum instrumentType, string underlying = "", string instrumentName = "")
 		{
-			var channelName = $"ordersany";
-			var okexChannel = _channels.FirstOrDefault(x => x.ChannelName == channelName);
-			return okexChannel
-					 ?? new OkexChannel(channelName, new SocketOrderRequest("orders", "ANY"));
+			var channelName = $"orders{instrumentType.ToString()}{underlying}{instrumentName}";
+			if (_subscribedChannels.TryGetValue(channelName, out var channel))
+			{
+				return channel;
+			}
+
+			var channelArgs = new Dictionary<string, string> { { "channel", "orders" }, { "instType", instrumentType.ToString() } };
+			if (!string.IsNullOrWhiteSpace(underlying)) channelArgs.Add("uly", underlying);
+			if (!string.IsNullOrWhiteSpace(instrumentName)) channelArgs.Add("instId", instrumentName);
+
+			return new OkexChannel(channelName, channelArgs);
+		}
+
+		private OkexChannel GetAccountChannel(string currency = "")
+		{
+			var channelName = $"account{currency}";
+
+			if (_subscribedChannels.TryGetValue(channelName, out var channel))
+			{
+				return channel;
+			}
+
+			var args = new Dictionary<string, string> { { "channel", "account" } };
+			if (!string.IsNullOrWhiteSpace(currency)) args.Add("ccy", currency);
+
+			return new OkexChannel(channelName, args);
 		}
 
 		#endregion
 
 		#region Subscribe/unsubscribe
 
-		private void AddChannel(OkexChannel channel)
+		private void AddChannel(OkexChannel okexChannel)
 		{
-			var channelParams = _channels.FirstOrDefault(x => x.ChannelName == channel.ChannelName);
-			if (channelParams is null)
+			if (!_subscribedChannels.TryGetValue(okexChannel.ChannelName, out _))
 			{
-				_channels.Add(channel);
+				_subscribedChannels.Add(okexChannel.ChannelName, okexChannel);
 			}
 		}
 
 		internal void SendSubscribeToChannels()
 		{
-			var channels = _channels
-				.Select(x => x.Params)
+			var channelParams = _subscribedChannels
+				.Select(x => x.Value.Params)
 				.ToArray();
 
-			if (!channels.Any())
+			if (!channelParams.Any())
 			{
 				return;
 			}
 
-			var request = new OkexSocketRequest("subscribe", channels);
+			var request = new OkexSocketRequest("subscribe", channelParams);
 			Send(request);
 		}
 
@@ -273,7 +305,7 @@ namespace Okex.Net.V5.Clients
 		{
 			var request = new OkexSocketRequest("unsubscribe", channel.Params);
 			Send(request);
-			_channels.Remove(channel);
+			_subscribedChannels.Remove(channel.ChannelName);
 		}
 
 		#endregion
@@ -294,6 +326,7 @@ namespace Okex.Net.V5.Clients
 			_channelProcessorActions = new Dictionary<ChannelTypeEnum, Action<OkexSocketResponse>>
 			{
 				{ChannelTypeEnum.Order, ProcessOrder},
+				{ChannelTypeEnum.Account, ProcessAccount},
 			};
 		}
 
@@ -378,6 +411,22 @@ namespace Okex.Net.V5.Clients
 			foreach (var order in orders)
 			{
 				OrderUpdate.Invoke(order);
+				_logger.Trace(JsonConvert.SerializeObject(order));
+			}
+		}
+
+		private void ProcessAccount(OkexSocketResponse response)
+		{
+			var balances = response.Data?.ToObject<OkexBalances[]>();
+			if (balances is null || !balances.Any())
+			{
+				return;
+			}
+
+			foreach (var balance in balances)
+			{
+				AccountUpdate.Invoke(balance);
+				_logger.Trace(JsonConvert.SerializeObject(balance));
 			}
 		}
 
@@ -391,7 +440,6 @@ namespace Okex.Net.V5.Clients
 			}
 
 			var text = JsonConvert.SerializeObject(request);
-			// _logger.Trace($"Send {text}");
 			_ws.Send(text);
 		}
 	}
