@@ -65,24 +65,16 @@ namespace Okex.Net.V5.Clients
 			var parameters = new Dictionary<string, object> { { "instType", okexInstrumentType.ToString() } };
 
 			if (string.IsNullOrWhiteSpace(underlying) && okexInstrumentType == OkexInstrumentTypeEnum.OPTION)
-			{
 				throw new ArgumentException("Underlying required for OPTION");
-			}
-
+				
 			if (!string.IsNullOrWhiteSpace(underlying) && okexInstrumentType == OkexInstrumentTypeEnum.SPOT)
-			{
 				throw new ArgumentException("Underlying only applicable to FUTURES/SWAP/OPTION");
-			}
 
 			if (!string.IsNullOrWhiteSpace(underlying))
-			{
 				parameters.Add("uly", underlying);
-			}
 
 			if (!string.IsNullOrWhiteSpace(instId))
-			{
 				parameters.Add("instId", instId);
-			}
 
 			return await SendRequest<OkexApiResponse<OkexInstrument>>(GetUrl(Endpoints_Instruments), HttpMethod.Get, ct, parameters).ConfigureAwait(false);
 		}
@@ -245,7 +237,7 @@ namespace Okex.Net.V5.Clients
 			return await SendRequest<OkexApiResponse<OkexOrderDetails>>(GetUrl(Endpoints_OrderList), HttpMethod.Get, ct, parameters, signed: true).ConfigureAwait(false);
 		}
 
-		public async Task<WebCallResult<OkexApiResponse<OkexBalances>>> GetBalancesAsync(string currency = "", CancellationToken ct = default)
+		public async Task<WebCallResult<OkexApiResponse<OkexAccountDetails>>> GetBalancesAsync(string currency = "", CancellationToken ct = default)
 		{
 			var parameters = new Dictionary<string, object>();
 			if (!string.IsNullOrWhiteSpace(currency))
@@ -253,7 +245,7 @@ namespace Okex.Net.V5.Clients
 				parameters.Add("ccy", currency);
 			}
 
-			return await SendRequest<OkexApiResponse<OkexBalances>>(GetUrl(Endpoints_Balances), HttpMethod.Get, ct, parameters, signed: true).ConfigureAwait(false);
+			return await SendRequest<OkexApiResponse<OkexAccountDetails>>(GetUrl(Endpoints_Balances), HttpMethod.Get, ct, parameters, signed: true).ConfigureAwait(false);
 		}
 
 		public async Task<WebCallResult<OkexApiResponse<OkexAccountConfig>>> GetAccountConfigAsync(CancellationToken ct = default)
@@ -274,6 +266,8 @@ namespace Okex.Net.V5.Clients
 		{
 			return this.OkexConstructRequest(uri, method, parameters, signed, postPosition, arraySerialization, requestId);
 		}
+
+
 		protected virtual IRequest OkexConstructRequest(Uri uri, HttpMethod method, Dictionary<string, object>? parameters, bool signed, PostParameters postPosition, ArrayParametersSerialization arraySerialization, int requestId)
 		{
 			if (parameters == null)

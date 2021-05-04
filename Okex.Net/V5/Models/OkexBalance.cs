@@ -2,7 +2,7 @@ using Newtonsoft.Json;
 
 namespace Okex.Net.V5.Models
 {
-	public class OkexBalances
+	public class OkexAccountDetails
 	{
 		[JsonProperty("uTime")]
 		public string UpdateTime { get; set; }
@@ -21,7 +21,6 @@ namespace Okex.Net.V5.Models
 		[JsonProperty("mgnRatio")]
 		public decimal? MarginRatio { get; set; }
 		[JsonProperty("details")]
-		public OkexAccountDetails[] Details { get; set; }
-
+		public OkexBalanceDetails[] Details { get; set; }
 	}
 }

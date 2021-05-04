@@ -45,7 +45,7 @@ namespace Okex.Net.V5.Clients
 
 		internal event Action ConnectionBroken = () => { };
 		internal event Action<OkexOrderDetails> OrderUpdate = order => { };
-		internal event Action<OkexBalances> AccountUpdate = order => { };
+		internal event Action<OkexAccountDetails> AccountUpdate = order => { };
 		internal event Action<ErrorMessage> ErrorReceived = error => { };
 
 		private bool _onKilled;
@@ -57,10 +57,10 @@ namespace Okex.Net.V5.Clients
 		private readonly OkexCredential _credential;
 		private int _reconnectTime => _clientConfig.SocketReconnectionTimeMs;
 		private readonly Dictionary<string, OkexChannel> _subscribedChannels = new Dictionary<string, OkexChannel>();
-		private readonly Dictionary<string, ChannelTypeEnum> _channelTypes = new Dictionary<string, ChannelTypeEnum>
+		private readonly Dictionary<string, OkexChannelTypeEnum> _channelTypes = new Dictionary<string, OkexChannelTypeEnum>
 		{
-			{"orders", ChannelTypeEnum.Order},
-			{"account", ChannelTypeEnum.Account}
+			{"orders", OkexChannelTypeEnum.Order},
+			{"account", OkexChannelTypeEnum.Account}
 		};
 
 		private string BaseUrl => _clientConfig.IsTestNet ? _clientConfig.DemoUrlPrivate : _clientConfig.UrlPrivate;
@@ -314,7 +314,7 @@ namespace Okex.Net.V5.Clients
 		#region ProcessMessage
 
 		private Dictionary<string, Action<OkexSocketResponse>> _eventProcessorActions;
-		private Dictionary<ChannelTypeEnum, Action<OkexSocketResponse>> _channelProcessorActions;
+		private Dictionary<OkexChannelTypeEnum, Action<OkexSocketResponse>> _channelProcessorActions;
 
 		private void InitProcessors()
 		{
@@ -324,10 +324,10 @@ namespace Okex.Net.V5.Clients
 				{"error", ProcessError},
 				{"unsubscribe", ProcessUnsubscribe}
 			};
-			_channelProcessorActions = new Dictionary<ChannelTypeEnum, Action<OkexSocketResponse>>
+			_channelProcessorActions = new Dictionary<OkexChannelTypeEnum, Action<OkexSocketResponse>>
 			{
-				{ChannelTypeEnum.Order, ProcessOrder},
-				{ChannelTypeEnum.Account, ProcessAccount},
+				{OkexChannelTypeEnum.Order, ProcessOrder},
+				{OkexChannelTypeEnum.Account, ProcessAccount},
 			};
 		}
 
@@ -418,7 +418,7 @@ namespace Okex.Net.V5.Clients
 
 		private void ProcessAccount(OkexSocketResponse response)
 		{
-			var balances = response.Data?.ToObject<OkexBalances[]>();
+			var balances = response.Data?.ToObject<OkexAccountDetails[]>();
 			if (balances is null || !balances.Any())
 			{
 				return;

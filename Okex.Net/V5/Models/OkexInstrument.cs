@@ -1,5 +1,6 @@
 
 using Newtonsoft.Json;
+using Okex.Net.V5.Enums;
 
 namespace Okex.Net.V5.Models
 {
@@ -20,27 +21,27 @@ namespace Okex.Net.V5.Models
 		[JsonProperty("settleCcy")]
 		public string SettlementCurrency { get; set; }
 		[JsonProperty("ctVal")]
-		public string ContractValue { get; set; }
+		public decimal? ContractValue { get; set; }
 		[JsonProperty("ctMult")]
-		public string ContractMultiplier { get; set; }
+		public decimal? ContractMultiplier { get; set; }
 		[JsonProperty("ctValCcy")]
 		public string ContractValueCurrency { get; set; }
 		[JsonProperty("optType")]
-		public string OptionType { get; set; }
+		public OkexOptionTypeEnum? OptionType { get; set; }
 		[JsonProperty("stk")]
-		public string StrikePrice { get; set; }
+		public decimal? StrikePrice { get; set; }
 		[JsonProperty("listTime")]
-		public string ListingTime { get; set; }
+		public long? ListingTime { get; set; }
 		[JsonProperty("expTime")]
-		public string ExpiryTime { get; set; }
+		public long ExpiryTime { get; set; }
 		[JsonProperty("lever")]
-		public string Leverage { get; set; }
+		public decimal? Leverage { get; set; }
 		[JsonProperty("tickSz")]
-		public string TickSize { get; set; }
+		public decimal? TickSize { get; set; }
 		[JsonProperty("lotSz")]
-		public string LotSize { get; set; }
+		public decimal? LotSize { get; set; }
 		[JsonProperty("minSz")]
-		public string MinimumOrderSize { get; set; }
+		public decimal? MinimumOrderSize { get; set; }
 		[JsonProperty("ctType")]
 		public string ContractType { get; set; }
 		[JsonProperty("alias")]

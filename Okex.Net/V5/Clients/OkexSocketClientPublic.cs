@@ -55,11 +55,11 @@ namespace Okex.Net.V5.Clients
 		private WebSocket _ws;
 		private int _reconnectTime => _clientConfig.SocketReconnectionTimeMs;
 		private readonly Dictionary<string, OkexChannel> _subscribedChannels = new Dictionary<string, OkexChannel>();
-		private readonly Dictionary<string, ChannelTypeEnum> _channelTypes = new Dictionary<string, ChannelTypeEnum>
+		private readonly Dictionary<string, OkexChannelTypeEnum> _channelTypes = new Dictionary<string, OkexChannelTypeEnum>
 		{
-			{"books5", ChannelTypeEnum.OrderBook},
-			{"tickers", ChannelTypeEnum.Ticker},
-			{"mark-price", ChannelTypeEnum.MarkPrice}
+			{"books5", OkexChannelTypeEnum.OrderBook},
+			{"tickers", OkexChannelTypeEnum.Ticker},
+			{"mark-price", OkexChannelTypeEnum.MarkPrice}
 		};
 
 		private string BaseUrl => _clientConfig.IsTestNet ? _clientConfig.DemoUrlPublic : _clientConfig.UrlPublic;
@@ -325,7 +325,7 @@ namespace Okex.Net.V5.Clients
 		#region ProcessMessage
 
 		private Dictionary<string, Action<OkexSocketResponse>> _eventProcessorActions;
-		private Dictionary<ChannelTypeEnum, Action<OkexSocketResponse>> _channelProcessorActions;
+		private Dictionary<OkexChannelTypeEnum, Action<OkexSocketResponse>> _channelProcessorActions;
 
 		private void InitProcessors()
 		{
@@ -335,11 +335,11 @@ namespace Okex.Net.V5.Clients
 				{"error", ProcessError},
 				{"unsubscribe", ProcessUnsubscribe}
 			};
-			_channelProcessorActions = new Dictionary<ChannelTypeEnum, Action<OkexSocketResponse>>
+			_channelProcessorActions = new Dictionary<OkexChannelTypeEnum, Action<OkexSocketResponse>>
 			{
-				{ChannelTypeEnum.OrderBook, ProcessBookPrice},
-				{ChannelTypeEnum.Ticker, ProcessTicker},
-				{ChannelTypeEnum.MarkPrice, ProcessMarkPrice}
+				{OkexChannelTypeEnum.OrderBook, ProcessBookPrice},
+				{OkexChannelTypeEnum.Ticker, ProcessTicker},
+				{OkexChannelTypeEnum.MarkPrice, ProcessMarkPrice}
 			};
 		}
 
