@@ -42,10 +42,10 @@ namespace Okex.Net.V5.Clients
 		public DateTime LastMessageDate { get; private set; } = DateTime.MinValue;
 
 		internal event Action ConnectionBroken = () => { };
-		internal event Action<OkexOrderBook> BookPriceUpdate = bookPrice => { };
-		internal event Action<OkexTicker> TickerUpdate = ticker => { };
-		internal event Action<OkexMarkPrice> MarkPriceUpdate = markPrice => { };
-		internal event Action<ErrorMessage> ErrorReceived = error => { };
+		public event Action<OkexOrderBook> BookPriceUpdate = bookPrice => { };
+		public event Action<OkexTicker> TickerUpdate = ticker => { };
+		public event Action<OkexMarkPrice> MarkPriceUpdate = markPrice => { };
+		public event Action<ErrorMessage> ErrorReceived = error => { };
 
 		private bool _onKilled;
 

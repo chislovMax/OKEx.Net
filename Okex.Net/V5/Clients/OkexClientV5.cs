@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
@@ -37,6 +36,7 @@ namespace Okex.Net.V5.Clients
 		private static readonly string BodyParameterKey = "<BODY>";
 
 		#region V5 EndPoints
+
 		private const string Endpoints_Currencies = "api/v5/asset/currencies";
 		private const string Endpoints_Instruments = "api/v5/public/instruments";
 		private const string Endpoints_OrderBooks = "api/v5/market/books";
@@ -113,7 +113,7 @@ namespace Okex.Net.V5.Clients
 			parameters.Add("tdMode", orderParams.OkexTradeMode.ToString());
 			parameters.Add("side", orderParams.Side.ToString());
 			parameters.Add("ordType", orderParams.OrderType.ToString());
-			parameters.Add("sz", orderParams.Amount.ToString(CultureInfo.InvariantCulture));
+			parameters.Add("sz", (int)orderParams.Amount);
 			if (orderParams.OrderType == OkexOrderTypeEnum.limit)
 			{
 				parameters.Add("px", orderParams.Price.Value.ToString());

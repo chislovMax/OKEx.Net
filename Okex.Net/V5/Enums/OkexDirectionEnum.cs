@@ -1,4 +1,4 @@
-namespace Okex.Net.V5
+namespace Okex.Net.V5.Enums
 {
 	public enum OkexDirectionEnum
 	{

@@ -10,7 +10,7 @@ namespace Okex.Net.V5.Models
 		[JsonProperty("instId")]
 		public string InstrumentName { get; set; }
 		[JsonProperty("markPx")]
-		public decimal? MarkPrice { get; set; }
+		public decimal? Price { get; set; }
 		[JsonProperty("ts")]
 		public string Timestamp { get; set; }
 	}

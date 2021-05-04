@@ -44,9 +44,9 @@ namespace Okex.Net.V5.Clients
 		public DateTime LastMessageDate { get; private set; } = DateTime.MinValue;
 
 		internal event Action ConnectionBroken = () => { };
-		internal event Action<OkexOrderDetails> OrderUpdate = order => { };
-		internal event Action<OkexAccountDetails> AccountUpdate = order => { };
-		internal event Action<ErrorMessage> ErrorReceived = error => { };
+		public event Action<OkexOrderDetails> OrderUpdate = order => { };
+		public event Action<OkexAccountDetails> AccountUpdate = order => { };
+		public event Action<ErrorMessage> ErrorReceived = error => { };
 
 		private bool _onKilled;
 
