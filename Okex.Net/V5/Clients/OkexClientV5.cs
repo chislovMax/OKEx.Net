@@ -46,7 +46,8 @@ namespace Okex.Net.V5.Clients
 		private const string Endpoints_OrderList = "api/v5/trade/orders-pending";
 		private const string Endpoints_Balances = "api/v5/account/balance";
 		private const string Endpoints_AccountConfig = "api/v5/account/config";
-		
+		private const string Endpoints_CancelOrder = "api/v5/trade/cancel-order";
+
 		#endregion
 
 
@@ -66,7 +67,7 @@ namespace Okex.Net.V5.Clients
 
 			if (string.IsNullOrWhiteSpace(underlying) && okexInstrumentType == OkexInstrumentTypeEnum.OPTION)
 				throw new ArgumentException("Underlying required for OPTION");
-				
+
 			if (!string.IsNullOrWhiteSpace(underlying) && okexInstrumentType == OkexInstrumentTypeEnum.SPOT)
 				throw new ArgumentException("Underlying only applicable to FUTURES/SWAP/OPTION");
 
@@ -251,6 +252,31 @@ namespace Okex.Net.V5.Clients
 		public async Task<WebCallResult<OkexApiResponse<OkexAccountConfig>>> GetAccountConfigAsync(CancellationToken ct = default)
 		{
 			return await SendRequest<OkexApiResponse<OkexAccountConfig>>(GetUrl(Endpoints_AccountConfig), HttpMethod.Get, ct, signed: true).ConfigureAwait(false);
+		}
+
+
+		public async Task<WebCallResult<OkexApiResponse<OkexOrderInfo>>> CancelOrderAsync(string instrumentName, string orderId = "", string clientOrderId = "", CancellationToken ct = default)
+		{
+			if (string.IsNullOrWhiteSpace(instrumentName))
+				throw new ArgumentException("Instrument name must not be null or empty");
+
+			var okexParams = new Dictionary<string, object> { { "instId", instrumentName } };
+
+			if (string.IsNullOrWhiteSpace(orderId) && string.IsNullOrWhiteSpace(clientOrderId))
+				throw new ArgumentException("Either ordId or clOrdId is required.");
+
+			if (!string.IsNullOrWhiteSpace(orderId))
+			{
+				okexParams.Add("ordId", orderId);
+			}
+
+			if (!string.IsNullOrWhiteSpace(clientOrderId))
+			{
+				okexParams.Add("clOrdId", clientOrderId);
+			}
+
+			return await SendRequest<OkexApiResponse<OkexOrderInfo>>(GetUrl(Endpoints_CancelOrder), HttpMethod.Post, ct, okexParams,
+				signed: true).ConfigureAwait(false);
 		}
 
 		protected virtual Uri GetUrl(string endpoint, string param = "")
