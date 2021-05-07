@@ -20,9 +20,11 @@ namespace Okex.Net.CoreObjects
 		private readonly HMACSHA256 encryptor;
 		private readonly bool signPublicRequests;
 		private readonly ArrayParametersSerialization arraySerialization;
+		private readonly bool _isTest;
 
-		public OkexAuthenticationProvider(ApiCredentials credentials, string passPhrase, bool signPublicRequests, ArrayParametersSerialization arraySerialization) : base(credentials)
+		public OkexAuthenticationProvider(ApiCredentials credentials, string passPhrase, bool signPublicRequests, ArrayParametersSerialization arraySerialization, bool isTest = false) : base(credentials)
 		{
+			_isTest = isTest;
 
 			if (credentials == null || credentials.Secret == null)
 				throw new ArgumentException("No valid API credentials provided. Key/Secret needed.");
@@ -60,15 +62,21 @@ namespace Okex.Net.CoreObjects
 
 			var signature = HmacSHA256(signtext, Credentials.Secret?.GetString());
 
-			return new Dictionary<string, string> {
+			var authParams = new Dictionary<string, string> {
 					 { "OK-ACCESS-KEY", Credentials.Key.GetString() },
 					 { "OK-ACCESS-SIGN", signature },
 					 { "OK-ACCESS-TIMESTAMP", time },
 					 { "OK-ACCESS-PASSPHRASE", PassPhrase.GetString() },
-					 { "x-simulated-trading", "1" }
 				};
-		}
 
+			if (_isTest)
+			{
+				authParams.Add("x-simulated-trading", "1");
+			}
+
+			return authParams;
+		}
+		
 		public static string Base64Encode(byte[] plainBytes)
 		{
 			return System.Convert.ToBase64String(plainBytes);

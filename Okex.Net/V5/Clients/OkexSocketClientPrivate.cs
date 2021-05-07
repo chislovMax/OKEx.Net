@@ -24,15 +24,12 @@ namespace Okex.Net.V5.Clients
 {
 	public class OkexSocketClientPrivate
 	{
-		public OkexSocketClientPrivate(ILogger logger, OkexCredential credential) : this(logger, credential, new SocketClientConfig())
-		{
-		}
-
-		public OkexSocketClientPrivate(ILogger logger, OkexCredential credential, SocketClientConfig clientConfig)
+		public OkexSocketClientPrivate(ILogger logger, OkexCredential credential, OkexApiConfig clientConfig)
 		{
 			_logger = logger;
 			_clientConfig = clientConfig;
 			_credential = credential;
+			_baseUrl = _clientConfig.UrlPublic;
 
 			InitProcessors();
 			CreateSocket();
@@ -43,7 +40,7 @@ namespace Okex.Net.V5.Clients
 		public bool SocketConnected => _ws.State == WebSocketState.Open;
 		public DateTime LastMessageDate { get; private set; } = DateTime.MinValue;
 
-		internal event Action ConnectionBroken = () => { };
+		public event Action ConnectionBroken = () => { };
 		public event Action<OkexOrderDetails> OrderUpdate = order => { };
 		public event Action<OkexAccountDetails> AccountUpdate = order => { };
 		public event Action<ErrorMessage> ErrorReceived = error => { };
@@ -51,7 +48,7 @@ namespace Okex.Net.V5.Clients
 		private bool _onKilled;
 
 		private readonly ILogger _logger;
-		private readonly SocketClientConfig _clientConfig;
+		private readonly OkexApiConfig _clientConfig;
 
 		private WebSocket _ws;
 		private readonly OkexCredential _credential;
@@ -63,7 +60,7 @@ namespace Okex.Net.V5.Clients
 			{"account", OkexChannelTypeEnum.Account}
 		};
 
-		private string BaseUrl => _clientConfig.IsTestNet ? _clientConfig.DemoUrlPrivate : _clientConfig.UrlPrivate;
+		private readonly string _baseUrl;
 
 
 		#region Connection
@@ -135,7 +132,6 @@ namespace Okex.Net.V5.Clients
 		{
 			_logger.LogTrace($"Socket ({Name}) {Id} is open (state: {_ws.State}): resubscribing...");
 			Auth();
-			SendSubscribeToChannels();
 		}
 
 		private void Auth()
@@ -206,7 +202,7 @@ namespace Okex.Net.V5.Clients
 
 		private void CreateSocket()
 		{
-			_ws = new WebSocket(BaseUrl, sslProtocols: SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls)
+			_ws = new WebSocket(_baseUrl, sslProtocols: SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls)
 			{
 				EnableAutoSendPing = true,
 				AutoSendPingInterval = 10
@@ -322,13 +318,19 @@ namespace Okex.Net.V5.Clients
 			{
 				{"subscribe", ProcessSubscribe},
 				{"error", ProcessError},
-				{"unsubscribe", ProcessUnsubscribe}
+				{"unsubscribe", ProcessUnsubscribe},
+				{"login", ProcessLogin}
 			};
 			_channelProcessorActions = new Dictionary<OkexChannelTypeEnum, Action<OkexSocketResponse>>
 			{
 				{OkexChannelTypeEnum.Order, ProcessOrder},
 				{OkexChannelTypeEnum.Account, ProcessAccount},
 			};
+		}
+
+		private void ProcessLogin(OkexSocketResponse response)
+		{
+			SendSubscribeToChannels();
 		}
 
 		private void OnSocketGetMessage(object sender, MessageReceivedEventArgs e)

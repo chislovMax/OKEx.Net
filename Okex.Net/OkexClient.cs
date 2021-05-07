@@ -1,4 +1,4 @@
-﻿using CryptoExchange.Net;
+using CryptoExchange.Net;
 using CryptoExchange.Net.Authentication;
 using CryptoExchange.Net.Interfaces;
 using CryptoExchange.Net.Objects;
@@ -71,7 +71,7 @@ namespace Okex.Net
         /// <param name="apiKey">The api key</param>
         /// <param name="apiSecret">The api secret</param>
         /// <param name="passPhrase">The passphrase you specified when creating the API key</param>
-        public virtual void SetApiCredentials(string apiKey, string apiSecret, string passPhrase)
+        public virtual void SetApiCredentials(string apiKey, string apiSecret, string passPhrase, bool isTest = false)
         {
             SetAuthenticationProvider(new OkexAuthenticationProvider(new ApiCredentials(apiKey, apiSecret), passPhrase, SignPublicRequests, ArrayParametersSerialization.Array));
         }

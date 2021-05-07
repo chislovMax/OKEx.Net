@@ -1,4 +1,4 @@
-﻿namespace Okex.Net.Interfaces
+namespace Okex.Net.Interfaces
 {
     public interface IOkexClient
     {
@@ -13,6 +13,6 @@
         /// <param name="apiKey">The api key</param>
         /// <param name="apiSecret">The api secret</param>
         /// <param name="passPhrase">The passphrase you specified when creating the API key</param>
-        void SetApiCredentials(string apiKey, string apiSecret, string passPhrase);
+        void SetApiCredentials(string apiKey, string apiSecret, string passPhrase, bool isTest = false);
     }
 }

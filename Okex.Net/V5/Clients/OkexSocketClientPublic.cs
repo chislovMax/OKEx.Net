@@ -23,14 +23,11 @@ namespace Okex.Net.V5.Clients
 {
 	public class OkexSocketClientPublic
 	{
-		public OkexSocketClientPublic(ILogger logger) : this(logger, new SocketClientConfig())
-		{
-		}
-
-		public OkexSocketClientPublic(ILogger logger, SocketClientConfig clientConfig)
+		public OkexSocketClientPublic(ILogger logger, OkexApiConfig clientConfig)
 		{
 			_logger = logger;
 			_clientConfig = clientConfig;
+			_baseUrl = _clientConfig.UrlPublic;
 
 			InitProcessors();
 			CreateSocket();
@@ -47,12 +44,12 @@ namespace Okex.Net.V5.Clients
 		public event Action<OkexMarkPrice> MarkPriceUpdate = markPrice => { };
 		public event Action<ErrorMessage> ErrorReceived = error => { };
 
+		private WebSocket _ws;
 		private bool _onKilled;
 
 		private readonly ILogger _logger;
-		private readonly SocketClientConfig _clientConfig;
+		private readonly OkexApiConfig _clientConfig;
 
-		private WebSocket _ws;
 		private int _reconnectTime => _clientConfig.SocketReconnectionTimeMs;
 		private readonly Dictionary<string, OkexChannel> _subscribedChannels = new Dictionary<string, OkexChannel>();
 		private readonly Dictionary<string, OkexChannelTypeEnum> _channelTypes = new Dictionary<string, OkexChannelTypeEnum>
@@ -62,7 +59,7 @@ namespace Okex.Net.V5.Clients
 			{"mark-price", OkexChannelTypeEnum.MarkPrice}
 		};
 
-		private string BaseUrl => _clientConfig.IsTestNet ? _clientConfig.DemoUrlPublic : _clientConfig.UrlPublic;
+		private readonly string _baseUrl;
 
 		#region Connection
 
@@ -187,7 +184,7 @@ namespace Okex.Net.V5.Clients
 
 		private void CreateSocket()
 		{
-			_ws = new WebSocket(BaseUrl, sslProtocols: SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls)
+			_ws = new WebSocket(_baseUrl, sslProtocols: SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls)
 			{
 				EnableAutoSendPing = true,
 				AutoSendPingInterval = 10

@@ -51,9 +51,9 @@ namespace Okex.Net.V5.Clients
 		#endregion
 
 
-		public void SetApiCredentials(string apiKey, string apiSecret, string passPhrase)
+		public void SetApiCredentials(string apiKey, string apiSecret, string passPhrase, bool isTest = false)
 		{
-			SetAuthenticationProvider(new OkexAuthenticationProvider(new ApiCredentials(apiKey, apiSecret), passPhrase, SignPublicRequests, ArrayParametersSerialization.Array));
+			SetAuthenticationProvider(new OkexAuthenticationProvider(new ApiCredentials(apiKey, apiSecret), passPhrase, SignPublicRequests, ArrayParametersSerialization.Array, isTest));
 		}
 
 		public async Task<WebCallResult<OkexApiResponse<OkexCurrency>>> GetCurrenciesAsync(CancellationToken ct = default)
