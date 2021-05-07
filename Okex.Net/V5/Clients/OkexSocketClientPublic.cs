@@ -42,6 +42,7 @@ namespace Okex.Net.V5.Clients
 		public event Action<OkexOrderBook> BookPriceUpdate = bookPrice => { };
 		public event Action<OkexTicker> TickerUpdate = ticker => { };
 		public event Action<OkexMarkPrice> MarkPriceUpdate = markPrice => { };
+		public event Action<OkexLimitPrice> LimitPriceUpdate = limitPrice => { };
 		public event Action<ErrorMessage> ErrorReceived = error => { };
 
 		private WebSocket _ws;
@@ -56,7 +57,8 @@ namespace Okex.Net.V5.Clients
 		{
 			{"books5", OkexChannelTypeEnum.OrderBook},
 			{"tickers", OkexChannelTypeEnum.Ticker},
-			{"mark-price", OkexChannelTypeEnum.MarkPrice}
+			{"mark-price", OkexChannelTypeEnum.MarkPrice},
+			{"price-limit", OkexChannelTypeEnum.LimitPrice}
 		};
 
 		private readonly string _baseUrl;
@@ -226,6 +228,16 @@ namespace Okex.Net.V5.Clients
 			AddChannel(GetMarkPriceChannel(instrumentName));
 			SendSubscribeToChannels();
 		}
+
+		public void SubscribeTLimitPrice(string instrumentName)
+		{
+			if (string.IsNullOrWhiteSpace(instrumentName))
+				throw new ArgumentException("Instrument name must not be null or empty", instrumentName);
+
+			AddChannel(GetLimitPriceChannel(instrumentName));
+			SendSubscribeToChannels();
+		}
+
 		public void UnsubscribeBookPriceChannel(string instrumentName, string orderBookType)
 		{
 			var orderBookChannel = GetBookPriceChannel(instrumentName, orderBookType);
@@ -242,6 +254,12 @@ namespace Okex.Net.V5.Clients
 		{
 			var markPriceChannel = GetMarkPriceChannel(instrumentName);
 			UnsubscribeChannel(markPriceChannel);
+		}	
+
+		public void UnsubscribeLimitPriceChannel(string instrumentName)
+		{
+			var limitPriceChannel = GetLimitPriceChannel(instrumentName);
+			UnsubscribeChannel(limitPriceChannel);
 		}
 
 		#region Generate channel strings
@@ -281,6 +299,18 @@ namespace Okex.Net.V5.Clients
 
 			var channelArgs = new Dictionary<string, string> { { "channel", "mark-price" }, { "instId", instrument } };
 			return  new OkexChannel(channelName, channelArgs);
+		}
+
+		private OkexChannel GetLimitPriceChannel(string instrumentName)
+		{
+			var channelName = $"price-limit{instrumentName}";
+			if (_subscribedChannels.TryGetValue(channelName, out var channel))
+			{
+				return channel;
+			}
+
+			var channelArgs = new Dictionary<string, string> { { "channel", "price-limit" }, { "instId", instrumentName } };
+			return new OkexChannel(channelName, channelArgs);
 		}
 
 		#endregion
@@ -336,7 +366,8 @@ namespace Okex.Net.V5.Clients
 			{
 				{OkexChannelTypeEnum.OrderBook, ProcessBookPrice},
 				{OkexChannelTypeEnum.Ticker, ProcessTicker},
-				{OkexChannelTypeEnum.MarkPrice, ProcessMarkPrice}
+				{OkexChannelTypeEnum.MarkPrice, ProcessMarkPrice},
+				{OkexChannelTypeEnum.LimitPrice, ProcessLimitPrice}
 			};
 		}
 
@@ -451,6 +482,20 @@ namespace Okex.Net.V5.Clients
 			markPrice.InstrumentName = instrument;
 			MarkPriceUpdate.Invoke(markPrice);
 		}
+
+
+		private void ProcessLimitPrice(OkexSocketResponse response)
+		{
+			var data = response.Data?.FirstOrDefault();
+			var limitPrice = data?.ToObject<OkexLimitPrice>();
+			if (limitPrice is null)
+			{
+				return;
+			}
+
+			LimitPriceUpdate.Invoke(limitPrice);
+		}
+
 
 		#endregion
 

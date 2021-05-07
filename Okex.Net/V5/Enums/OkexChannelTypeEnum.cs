@@ -6,6 +6,7 @@ namespace Okex.Net.V5.Enums
 		Ticker,
 		MarkPrice,
 		Order,
-		Account
+		Account,
+		LimitPrice
 	}
 }
