@@ -414,7 +414,6 @@ namespace Okex.Net.V5.Clients
 			foreach (var order in orders)
 			{
 				OrderUpdate.Invoke(order);
-				_logger.LogTrace(JsonConvert.SerializeObject(order));
 			}
 		}
 
@@ -429,7 +428,6 @@ namespace Okex.Net.V5.Clients
 			foreach (var balance in balances)
 			{
 				AccountUpdate.Invoke(balance);
-				_logger.LogTrace(JsonConvert.SerializeObject(balance));
 			}
 		}
 
