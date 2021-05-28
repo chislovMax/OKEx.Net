@@ -22,7 +22,7 @@ using ErrorEventArgs = SuperSocket.ClientEngine.ErrorEventArgs;
 
 namespace Okex.Net.V5.Clients
 {
-	public class OkexSocketClientPrivate
+	public class OkexSocketClientPrivate : IDisposable
 	{
 		public OkexSocketClientPrivate(ILogger logger, OkexCredential credential, OkexApiConfig clientConfig)
 		{
@@ -442,6 +442,11 @@ namespace Okex.Net.V5.Clients
 
 			var text = JsonConvert.SerializeObject(request);
 			_ws.Send(text);
+		}
+
+		public void Dispose()
+		{
+			_ws.Dispose();
 		}
 	}
 }

@@ -21,7 +21,7 @@ using OkexSocketResponse = Okex.Net.V5.Models.OkexSocketResponse;
 
 namespace Okex.Net.V5.Clients
 {
-	public class OkexSocketClientPublic
+	public class OkexSocketClientPublic : IDisposable
 	{
 		public OkexSocketClientPublic(ILogger logger, OkexApiConfig clientConfig)
 		{
@@ -509,6 +509,11 @@ namespace Okex.Net.V5.Clients
 			var text = JsonConvert.SerializeObject(request);
 			// _logger.Trace($"Send {text}");
 			_ws.Send(text);
+		}
+
+		public void Dispose()
+		{
+			_ws.Dispose();
 		}
 	}
 }
