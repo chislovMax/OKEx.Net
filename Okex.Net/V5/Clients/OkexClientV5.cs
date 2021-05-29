@@ -44,6 +44,7 @@ namespace Okex.Net.V5.Clients
 		private const string Endpoints_OrderDetails = "api/v5/trade/order";
 		private const string Endpoints_Ticker = "api/v5/market/ticker";
 		private const string Endpoints_OrderList = "api/v5/trade/orders-pending";
+		private const string Endpoints_OrderHistory = "api/v5/trade/orders-history";
 		private const string Endpoints_Balances = "api/v5/account/balance";
 		private const string Endpoints_AccountConfig = "api/v5/account/config";
 		private const string Endpoints_CancelOrder = "api/v5/trade/cancel-order";
@@ -236,6 +237,58 @@ namespace Okex.Net.V5.Clients
 			}
 
 			return await SendRequest<OkexApiResponse<OkexOrderDetails>>(GetUrl(Endpoints_OrderList), HttpMethod.Get, ct, parameters, signed: true).ConfigureAwait(false);
+		}
+
+		public async Task<WebCallResult<OkexApiResponse<OkexOrderDetails>>> GetOrderHistoryAsync(
+			OkexOrderListParams listParams, CancellationToken ct = default)
+		{
+			if (listParams.State.HasValue && (listParams.State != OkexOrderStateEnum.live || listParams.State != OkexOrderStateEnum.partially_filled))
+			{
+				throw new ArgumentException("State must be live or partially_filled");
+			}
+
+			var parameters = new Dictionary<string, object>();
+			if (listParams.InstrumentType.HasValue)
+			{
+				parameters.Add("instType", listParams.InstrumentType.ToString());
+			}
+
+			if (!string.IsNullOrWhiteSpace(listParams.Underlying))
+			{
+				parameters.Add("uly", listParams.Underlying);
+			}
+
+			if (!string.IsNullOrWhiteSpace(listParams.InstrumentName))
+			{
+				parameters.Add("instId", listParams.InstrumentName);
+			}
+
+			if (listParams.OrderType.HasValue)
+			{
+				parameters.Add("ordType", listParams.OrderType.ToString());
+			}
+
+			if (listParams.State.HasValue)
+			{
+				parameters.Add("state", listParams.State.ToString());
+			}
+
+			if (!string.IsNullOrWhiteSpace(listParams.AfterOrderId))
+			{
+				parameters.Add("after", listParams.AfterOrderId);
+			}
+
+			if (!string.IsNullOrWhiteSpace(listParams.AfterOrderId))
+			{
+				parameters.Add("before", listParams.BeforeOrderId);
+			}
+
+			if (!string.IsNullOrWhiteSpace(listParams.Limit))
+			{
+				parameters.Add("limit", listParams.BeforeOrderId);
+			}
+
+			return await SendRequest<OkexApiResponse<OkexOrderDetails>>(GetUrl(Endpoints_OrderHistory), HttpMethod.Get, ct, parameters, signed: true).ConfigureAwait(false);
 		}
 
 		public async Task<WebCallResult<OkexApiResponse<OkexAccountDetails>>> GetBalancesAsync(string currency = "", CancellationToken ct = default)
