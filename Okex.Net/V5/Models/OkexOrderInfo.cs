@@ -2,7 +2,7 @@ using Newtonsoft.Json;
 
 namespace Okex.Net.V5.Models
 {
-	public class OkexOrderInfo
+	public class OkexOrderInfo : AbstractOkexModel
 	{
 		[JsonProperty("ordId")]
 		public string OrderId { get; set; }
@@ -11,7 +11,7 @@ namespace Okex.Net.V5.Models
 		[JsonProperty("tag")]
 		public string Tag { get; set; }
 		[JsonProperty("sCode")]
-		public string Code { get; set; }
+		public override string Code { get; set; }
 		[JsonProperty("sMsg")]
 		public string Message { get; set; }
 	}

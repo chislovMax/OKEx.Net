@@ -1,8 +1,8 @@
 using Newtonsoft.Json;
 
-namespace Okex.Net.V5.Models
+namespace Okex.Net.V5.Models 
 {
-	public class OkexCurrency
+	public class OkexCurrency : AbstractOkexModel
 	{
 		[JsonProperty("ccy")]
 		public string ShortName { get; set; }

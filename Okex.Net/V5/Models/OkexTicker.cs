@@ -3,7 +3,7 @@ using Okex.Net.V5.Enums;
 
 namespace Okex.Net.V5.Models
 {
-	public class OkexTicker
+	public class OkexTicker : AbstractOkexModel
 	{
 		[JsonProperty("instType")]
 		public OkexInstrumentTypeEnum OkexInstrumentType { get; set; }

@@ -2,7 +2,7 @@ using Newtonsoft.Json;
 
 namespace Okex.Net.V5.Models
 {
-	public class OkexOrderBook
+	public class OkexOrderBook : AbstractOkexModel
 	{
 		[JsonProperty("asks")]
 		public OkexOrderBookEntry[] Asks { get; set; }

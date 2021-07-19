@@ -4,7 +4,7 @@ using Okex.Net.V5.Enums;
 
 namespace Okex.Net.V5.Models
 {
-	public class OkexInstrument
+	public class OkexInstrument : AbstractOkexModel
 	{
 		[JsonProperty("instType")]
 		public string InstrumentType { get; set; }

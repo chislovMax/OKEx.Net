@@ -2,7 +2,7 @@ using Newtonsoft.Json;
 
 namespace Okex.Net.V5.Models
 {
-	public class OkexAccountDetails
+	public class OkexAccountDetails : AbstractOkexModel
 	{
 		[JsonProperty("uTime")]
 		public string UpdateTime { get; set; }

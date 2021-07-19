@@ -3,7 +3,7 @@ using Okex.Net.V5.Enums;
 
 namespace Okex.Net.V5.Models
 {
-	public class OkexAccountConfig
+	public class OkexAccountConfig : AbstractOkexModel
 	{
 		[JsonProperty("uid")]
 		public string UId { get; set; }
