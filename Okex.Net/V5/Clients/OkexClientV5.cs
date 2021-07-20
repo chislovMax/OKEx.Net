@@ -113,7 +113,7 @@ namespace Okex.Net.V5.Clients
 
 			parameters.Add("instId", orderParams.InstrumentName);
 			parameters.Add("tdMode", orderParams.OkexTradeMode.ToString());
-			parameters.Add("side", "44545");
+			parameters.Add("side", orderParams.Side.ToString());
 			parameters.Add("ordType", orderParams.OrderType.ToString());
 			parameters.Add("sz", (int)orderParams.Amount);
 			if (orderParams.OrderType == OkexOrderTypeEnum.limit)
