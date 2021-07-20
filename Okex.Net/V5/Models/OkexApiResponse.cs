@@ -2,7 +2,7 @@ using Newtonsoft.Json;
 
 namespace Okex.Net.V5.Models
 {
-	public class OkexApiResponse <T>	where T : class 
+	public class OkexApiResponse <T>	where T : AbstractOkexModel 
 	{
 		[JsonProperty("code")]
 		public string Code { get; set; }
