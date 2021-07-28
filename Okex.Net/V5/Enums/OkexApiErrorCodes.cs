@@ -21,6 +21,7 @@ namespace Okex.Net.V5.Enums
 		SystemError = 50026,
 		InvalidOKAccessTimestamp = 50112,
 		InvalidInstrument = 51001,
+		OrderAmountExceedsCurrentTierLimit = 51004,
 		OrderAmountExceedsTheLimit = 51005,
 		OrderPriceOutOfTheLimit = 51006,
 		OrderMinAmount = 51007,
