@@ -13,6 +13,6 @@ namespace Okex.Net.V5.Models
 		[JsonProperty("sCode")]
 		public override string Code { get; set; }
 		[JsonProperty("sMsg")]
-		public string Message { get; set; }
+		public override string Message { get; set; }
 	}
 }

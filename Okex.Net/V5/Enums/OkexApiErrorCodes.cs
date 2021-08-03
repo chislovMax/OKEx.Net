@@ -4,6 +4,8 @@ namespace Okex.Net.V5.Enums
 	{
 		Unknown = -1,
 
+		SystemUpgrading = 503,
+
 		InvalidParams = 51000,
 
 		RequestTooFrequent = 50011,
@@ -27,6 +29,7 @@ namespace Okex.Net.V5.Enums
 		OrderMinAmount = 51007,
 		OrderLowBalance = 51008,
 		OrderPlacementBLocked = 51009,
+		OperationIsNotSupported = 51010,
 		OrderAmountMustBeGreaterAvailableBalance = 51020,
 		InstrumentExpired = 51027,
 		OrderQuantityLess = 51120,
@@ -35,7 +38,5 @@ namespace Okex.Net.V5.Enums
 		InsufficientBalance = 51131,
 		OrderAmountExceedsMax = 51202,
 		OrderAmountExceedsLimit = 51203
-
-
 	}
 }
