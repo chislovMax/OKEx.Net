@@ -20,6 +20,8 @@ namespace Okex.Net.V5.Models
 		public decimal? MaintenanceMargin { get; set; }
 		[JsonProperty("mgnRatio")]
 		public decimal? MarginRatio { get; set; }
+		[JsonProperty("notionalUsd")]
+		public decimal? NotionalUsd { get; set; }
 		[JsonProperty("details")]
 		public OkexBalanceDetails[] Details { get; set; }
 	}
