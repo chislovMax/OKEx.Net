@@ -4,6 +4,8 @@ namespace Okex.Net.V5.Enums
 	{
 		Unknown = -1,
 
+
+		RequestTooFrequentHttpCode = 429,
 		SystemUpgrading = 503,
 
 		InvalidParams = 51000,
