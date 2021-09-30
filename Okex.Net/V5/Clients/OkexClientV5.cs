@@ -307,7 +307,6 @@ namespace Okex.Net.V5.Clients
 			return await SendRequest<OkexApiResponse<OkexAccountConfig>>(GetUrl(Endpoints_AccountConfig), HttpMethod.Get, ct, signed: true).ConfigureAwait(false);
 		}
 
-
 		public async Task<WebCallResult<OkexApiResponse<OkexOrderInfo>>> CancelOrderAsync(string instrumentName, string orderId = "", string clientOrderId = "", CancellationToken ct = default)
 		{
 			if (string.IsNullOrWhiteSpace(instrumentName))

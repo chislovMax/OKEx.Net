@@ -10,6 +10,8 @@ namespace Okex.Net.V5.Models
 		public decimal? Equity { get; set; }
 		[JsonProperty("cashBal")]
 		public decimal? CashBalance { get; set; }
+		[JsonProperty("eqUsd")]
+		public decimal? EquityUsd { get; set; }
 		[JsonProperty("uTime")]
 		public string UpdateTime { get; set; }
 		[JsonProperty("isoEq")]
