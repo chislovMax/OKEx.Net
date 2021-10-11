@@ -427,12 +427,12 @@ namespace Okex.Net.V5.Clients
 
 		private void ProcessSubscribe(OkexSocketResponse response)
 		{
-			_logger.LogTrace($"SUBSCRIBED to channels {JsonConvert.SerializeObject(response.Argument)}");
+			//_logger.LogTrace($"SUBSCRIBED to channels {JsonConvert.SerializeObject(response.Argument)}");
 		}
 
 		private void ProcessUnsubscribe(OkexSocketResponse socketResponse)
 		{
-			_logger.LogTrace($"UNSUBSCRIBED from a channels {JsonConvert.SerializeObject(socketResponse.Argument)}");
+			//_logger.LogTrace($"UNSUBSCRIBED from a channels {JsonConvert.SerializeObject(socketResponse.Argument)}");
 		}
 
 		private void ProcessError(OkexSocketResponse response)

@@ -4,6 +4,8 @@ namespace Okex.Net.V5.Enums
 	{
 		Unknown = -1,
 
+
+		RequestTooFrequentHttpCode = 429,
 		SystemUpgrading = 503,
 
 		InvalidParams = 51000,
@@ -37,6 +39,7 @@ namespace Okex.Net.V5.Enums
 		OrderPriceHigherThenMinPrice = 51122,
 		InsufficientBalance = 51131,
 		OrderAmountExceedsMax = 51202,
-		OrderAmountExceedsLimit = 51203
+		OrderAmountExceedsLimit = 51203,
+		OrderAlreadyCompleted = 51402
 	}
 }
