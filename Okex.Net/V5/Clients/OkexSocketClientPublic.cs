@@ -513,6 +513,11 @@ namespace Okex.Net.V5.Clients
 
 		public void Dispose()
 		{
+			_ws.Error -= SocketOnError;
+			_ws.Opened -= OnSocketOpened;
+			_ws.Closed -= OnSocketClosed;
+			_ws.MessageReceived -= OnSocketGetMessage;
+
 			_ws.Dispose();
 		}
 	}
