@@ -36,6 +36,6 @@ namespace Okex.Net.V5.Models
 		[JsonProperty("sodUtc8")]
 		public string SodUtc8 { get; set; }
 		[JsonProperty("ts")]
-		public string TS { get; set; }
+		public string Timestamp { get; set; }
 	}
 }
