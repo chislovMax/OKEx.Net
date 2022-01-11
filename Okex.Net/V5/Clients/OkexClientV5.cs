@@ -49,9 +49,10 @@ namespace Okex.Net.V5.Clients
 		private const string Endpoints_AccountConfig = "api/v5/account/config";
 		private const string Endpoints_CancelOrder = "api/v5/trade/cancel-order";
 		private const string Endpoints_MaxSizeAmount = "api/v5/account/max-size";
+		private const string Endpoints_AvailableMaxSizeAmount = "api/v5/account/max-avail-size";
 
 		#endregion
-
+		
 
 		public void SetApiCredentials(string apiKey, string apiSecret, string passPhrase, bool isTest = false)
 		{
@@ -355,6 +356,32 @@ namespace Okex.Net.V5.Clients
 			}
 
 			return await SendRequest<OkexApiResponse<AmountMaxSizeInfo>>(GetUrl(Endpoints_MaxSizeAmount), HttpMethod.Get, ct, okexParams,
+				signed: true).ConfigureAwait(false);
+		}
+
+		public async Task<WebCallResult<OkexApiResponse<AvailableMaxSizeInfo>>> GetAvailableAmountMaxSizeAsync(string instrumentName,
+			OkexTradeModeEnum tradeMode, string currency = "", decimal? price = null, decimal? leverage = null, CancellationToken ct = default)
+		{
+			if (string.IsNullOrWhiteSpace(instrumentName))
+				throw new ArgumentException("Instrument name must not be null or empty");
+
+			var okexParams = new Dictionary<string, object> { { "instId", instrumentName }, { "tdMode", tradeMode } };
+			if (!string.IsNullOrWhiteSpace(currency))
+			{
+				okexParams.Add("ccy", currency);
+			}
+
+			if (price.HasValue)
+			{
+				okexParams.Add("px", price);
+			}
+
+			if (leverage.HasValue)
+			{
+				okexParams.Add("leverage", leverage);
+			}
+
+			return await SendRequest<OkexApiResponse<AvailableMaxSizeInfo>>(GetUrl(Endpoints_AvailableMaxSizeAmount), HttpMethod.Get, ct, okexParams,
 				signed: true).ConfigureAwait(false);
 		}
 
