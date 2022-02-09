@@ -33,7 +33,7 @@ namespace Okex.Net.V5.Models
 		[JsonProperty("listTime")]
 		public long? ListingTime { get; set; }
 		[JsonProperty("expTime")]
-		public long ExpiryTime { get; set; }
+		public long? ExpiryTime { get; set; }
 		[JsonProperty("lever")]
 		public decimal? Leverage { get; set; }
 		[JsonProperty("tickSz")]

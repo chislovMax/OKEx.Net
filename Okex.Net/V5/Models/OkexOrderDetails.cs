@@ -6,7 +6,7 @@ namespace Okex.Net.V5.Models
 	public class OkexOrderDetails : AbstractOkexModel
 	{
 		[JsonProperty("instType")]
-		public OkexInstrumentTypeEnum OkexInstrumentType { get; set; }
+		public OkexInstrumentTypeEnum InstrumentType { get; set; }
 		[JsonProperty("instId")]
 		public string InstrumentName { get; set; }
 		[JsonProperty("ccy")]
