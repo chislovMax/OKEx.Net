@@ -15,5 +15,7 @@ namespace Okex.Net.V5.Models
 		public decimal Amount { get; set; }
 		public decimal? Price { get; set; }
 		public bool? ReduceOnly { get; set; }
+		public QuantityType? QuantityType { get; set; }
+		public OkexInstrumentTypeEnum InstrumentType { get; set; }	
 	}
 }

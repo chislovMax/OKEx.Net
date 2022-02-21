@@ -52,7 +52,7 @@ namespace Okex.Net.V5.Clients
 		private const string Endpoints_AvailableMaxSizeAmount = "api/v5/account/max-avail-size";
 
 		#endregion
-		
+
 
 		public void SetApiCredentials(string apiKey, string apiSecret, string passPhrase, bool isTest = false)
 		{
@@ -117,7 +117,6 @@ namespace Okex.Net.V5.Clients
 			parameters.Add("tdMode", orderParams.OkexTradeMode.ToString());
 			parameters.Add("side", orderParams.Side.ToString());
 			parameters.Add("ordType", orderParams.OrderType.ToString());
-			parameters.Add("sz", (int)orderParams.Amount);
 			if (orderParams.OrderType == OkexOrderTypeEnum.limit)
 			{
 				parameters.Add("px", orderParams.Price.Value.ToString());
@@ -145,6 +144,20 @@ namespace Okex.Net.V5.Clients
 			if (orderParams.ReduceOnly != null)
 			{
 				parameters.Add("reduceOnly", orderParams.ReduceOnly.Value);
+			}
+
+			if (orderParams.OrderType == OkexOrderTypeEnum.market && orderParams.InstrumentType == OkexInstrumentTypeEnum.SPOT)
+			{
+				parameters.Add("tgtCcy", orderParams.QuantityType.Value.ToString());
+			}
+
+			if (orderParams.QuantityType is QuantityType.base_ccy)
+			{
+				parameters.Add("sz", orderParams.Amount);
+			}
+			else
+			{
+				parameters.Add("sz", (int)orderParams.Amount);
 			}
 
 			return await SendRequest<OkexApiResponse<OkexOrderInfo>>(GetUrl(Endpoints_PlaceOrder), HttpMethod.Post, ct, parameters, signed: true).ConfigureAwait(false);
