@@ -37,14 +37,20 @@ namespace Okex.Net.CoreObjects
 
 		public override Dictionary<string, string> AddAuthenticationToHeaders(string uri, HttpMethod method, Dictionary<string, object> parameters, bool signed, PostParameters postParameterPosition, ArrayParametersSerialization arraySerialization)
 		{
+			var authParams = new Dictionary<string, string>();
+			if (_isTest)
+			{
+				authParams.Add("x-simulated-trading", "1");
+			}
+
 			if (!signed && !signPublicRequests)
-				return new Dictionary<string, string>();
+				return authParams;
 
 			if (Credentials == null || Credentials.Key == null || PassPhrase == null)
 				throw new ArgumentException("No valid API credentials provided. Key/Secret/PassPhrase needed.");
 
 			var time = (DateTime.UtcNow.ToUnixTimeMilliSeconds() / 1000.0m).ToString(CultureInfo.InvariantCulture);
-			var signtext = time + method.Method.ToUpper() + uri.Replace("https://www.okex.com", "").Trim('?');
+			var signtext = time + method.Method.ToUpper() + uri.Replace("https://www.okx.com", "").Trim('?');
 
 			if (method == HttpMethod.Post)
 			{
@@ -62,17 +68,10 @@ namespace Okex.Net.CoreObjects
 
 			var signature = HmacSHA256(signtext, Credentials.Secret?.GetString());
 
-			var authParams = new Dictionary<string, string> {
-					 { "OK-ACCESS-KEY", Credentials.Key.GetString() },
-					 { "OK-ACCESS-SIGN", signature },
-					 { "OK-ACCESS-TIMESTAMP", time },
-					 { "OK-ACCESS-PASSPHRASE", PassPhrase.GetString() },
-				};
-
-			if (_isTest)
-			{
-				authParams.Add("x-simulated-trading", "1");
-			}
+			authParams.Add("OK-ACCESS-KEY", Credentials.Key.GetString());
+			authParams.Add("OK-ACCESS-SIGN", signature);
+			authParams.Add("OK-ACCESS-TIMESTAMP", time);
+			authParams.Add("OK-ACCESS-PASSPHRASE", PassPhrase.GetString());
 
 			return authParams;
 		}

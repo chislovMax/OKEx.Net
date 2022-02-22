@@ -15,11 +15,11 @@ namespace Okex.Net.CoreObjects
         /// <summary>
         /// ctor
         /// </summary>
-        public OkexClientOptions(bool isTest = false) : base("https://www.okex.com")
+        public OkexClientOptions(bool isTest = false) : base("https://www.okx.com")
         {
         }
 
-        public OkexClientOptions() : base("https://www.okex.com")
+        public OkexClientOptions() : base("https://www.okx.com")
         {
 	        
         }
