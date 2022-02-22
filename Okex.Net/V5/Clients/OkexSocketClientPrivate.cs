@@ -29,7 +29,7 @@ namespace Okex.Net.V5.Clients
 			_logger = logger;
 			_clientConfig = clientConfig;
 			_credential = credential;
-			_baseUrl = _clientConfig.UrlPrivate;
+			_baseUrl = _clientConfig.WSUrlPrivate;
 
 			InitProcessors();
 			CreateSocket();

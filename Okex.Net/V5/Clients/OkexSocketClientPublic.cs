@@ -27,7 +27,7 @@ namespace Okex.Net.V5.Clients
 		{
 			_logger = logger;
 			_clientConfig = clientConfig;
-			_baseUrl = _clientConfig.UrlPublic;
+			_baseUrl = _clientConfig.WSUrlPublic;
 
 			InitProcessors();
 			CreateSocket();

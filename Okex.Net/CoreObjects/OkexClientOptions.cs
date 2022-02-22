@@ -15,25 +15,13 @@ namespace Okex.Net.CoreObjects
         /// <summary>
         /// ctor
         /// </summary>
-        public OkexClientOptions(bool isTest = false) : base("https://www.okx.com")
+        public OkexClientOptions(string url, bool isTest = false) : base(url)
         {
         }
 
-        public OkexClientOptions() : base("https://www.okx.com")
+        public OkexClientOptions(string url) : base(url)
         {
 	        
-        }
-
-
-        /// <summary>
-        /// Copy
-        /// </summary>
-        /// <returns></returns>
-        public OkexClientOptions Copy()
-        {
-            var copy = Copy<OkexClientOptions>();
-            copy.SignPublicRequests = SignPublicRequests;
-            return copy;
         }
     }
 }

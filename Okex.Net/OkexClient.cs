@@ -33,18 +33,11 @@ namespace Okex.Net
         #endregion
 
         #region Private Fields
-        protected static OkexClientOptions defaultOptions = new OkexClientOptions();
-        protected static OkexClientOptions DefaultOptions => defaultOptions.Copy();
+        protected static OkexClientOptions defaultOptions = new OkexClientOptions("https://www.okx.com");
         protected readonly CultureInfo ci = CultureInfo.InvariantCulture;
         #endregion
 
         #region Constructor/Destructor
-        /// <summary>
-        /// Create a new instance of OkexClient using the default options
-        /// </summary>
-        public OkexClient() : this(DefaultOptions)
-        {
-        }
 
         /// <summary>
         /// Create a new instance of the OkexClient with the provided options
