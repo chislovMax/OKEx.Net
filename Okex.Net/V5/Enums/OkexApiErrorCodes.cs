@@ -25,6 +25,7 @@ namespace Okex.Net.V5.Enums
 		SystemError = 50026,
 		InvalidOKAccessTimestamp = 50112,
 		InvalidInstrument = 51001,
+
 		OrderAmountExceedsCurrentTierLimit = 51004,
 		OrderAmountExceedsTheLimit = 51005,
 		OrderPriceOutOfTheLimit = 51006,
@@ -32,14 +33,16 @@ namespace Okex.Net.V5.Enums
 		OrderLowBalance = 51008,
 		OrderPlacementBLocked = 51009,
 		OperationIsNotSupported = 51010,
+		NotMatchInstrumentType = 51015,
 		OrderAmountMustBeGreaterAvailableBalance = 51020,
 		InstrumentExpired = 51027,
 		OrderQuantityLess = 51120,
 		OrderCountMustBeInteger = 51121,
 		OrderPriceHigherThenMinPrice = 51122,
 		InsufficientBalance = 51131,
+		MarketOrderSizeToLarge = 51201,
 		OrderAmountExceedsMax = 51202,
 		OrderAmountExceedsLimit = 51203,
-		OrderAlreadyCompleted = 51402
+		OrderAlreadyCompleted = 51402,
 	}
 }
