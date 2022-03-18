@@ -12,6 +12,7 @@ using CryptoExchange.Net.Objects;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Okex.Net.CoreObjects;
+using Okex.Net.Enums;
 using Okex.Net.Interfaces;
 using Okex.Net.V5.Enums;
 using Okex.Net.V5.Models;
@@ -50,6 +51,7 @@ namespace Okex.Net.V5.Clients
 		private const string Endpoints_CancelOrder = "api/v5/trade/cancel-order";
 		private const string Endpoints_MaxSizeAmount = "api/v5/account/max-size";
 		private const string Endpoints_AvailableMaxSizeAmount = "api/v5/account/max-avail-size";
+		private const string Endpoints_Status = "api/v5/system/status";
 
 		#endregion
 
@@ -398,6 +400,17 @@ namespace Okex.Net.V5.Clients
 				signed: true).ConfigureAwait(false);
 		}
 
+		public async Task<WebCallResult<OkexApiResponse<OkexSystemStatus>>> GetSystemStatusAsync(OkexMaintenanceStateEnum? maintenanceState = null, CancellationToken ct = default)
+		{
+			var okexParams = new Dictionary<string, object> ();
+			if (maintenanceState.HasValue)
+			{
+				okexParams.Add("state", maintenanceState.ToString());
+			}
+
+			return await SendRequest<OkexApiResponse<OkexSystemStatus>>(GetUrl(Endpoints_Status), HttpMethod.Get, ct, okexParams).ConfigureAwait(false);
+		}
+
 		protected virtual Uri GetUrl(string endpoint, string param = "")
 		{
 			var x = endpoint.IndexOf('<');
@@ -411,7 +424,6 @@ namespace Okex.Net.V5.Clients
 		{
 			return this.OkexConstructRequest(uri, method, parameters, signed, postPosition, arraySerialization, requestId);
 		}
-
 
 		protected virtual IRequest OkexConstructRequest(Uri uri, HttpMethod method, Dictionary<string, object>? parameters, bool signed, PostParameters postPosition, ArrayParametersSerialization arraySerialization, int requestId)
 		{
