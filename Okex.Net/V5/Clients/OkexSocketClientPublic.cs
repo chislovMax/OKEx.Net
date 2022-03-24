@@ -327,16 +327,15 @@ namespace Okex.Net.V5.Clients
 
 		internal void SendSubscribeToChannels()
 		{
-			var channels = _subscribedChannels
-				.Select(x => x.Value.Params)
-				.ToArray();
+			var cacheChannels = _subscribedChannels.ToArray();
 
-			if (!channels.Any())
+			var channelsParams = cacheChannels.Select(x => x.Value.Params).ToArray();
+			if (!channelsParams.Any())
 			{
 				return;
 			}
 
-			var request = new OkexSocketRequest("subscribe", channels);
+			var request = new OkexSocketRequest("subscribe", channelsParams);
 			Send(request);
 		}
 
