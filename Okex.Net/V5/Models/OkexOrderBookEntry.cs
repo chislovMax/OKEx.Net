@@ -1,5 +1,7 @@
+using System;
 using CryptoExchange.Net.Converters;
 using Newtonsoft.Json;
+using Okex.Net.Converters.Core;
 
 namespace Okex.Net.V5.Models
 {
@@ -7,6 +9,7 @@ namespace Okex.Net.V5.Models
 	public class OkexOrderBookEntry
 	{
 		[ArrayProperty(0)]
+		[JsonConverter(typeof(StringConverter))]
 		public decimal Price { get; set; }
 
 		/// <summary>

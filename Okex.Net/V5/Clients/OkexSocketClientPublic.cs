@@ -45,6 +45,8 @@ namespace Okex.Net.V5.Clients
 		public event Action<OkexLimitPrice> LimitPriceUpdate = limitPrice => { };
 		public event Action<ErrorMessage> ErrorReceived = error => { };
 
+		private const int ChunkSize = 50;
+
 		private WebSocket _ws;
 		private bool _onKilled;
 
@@ -131,7 +133,7 @@ namespace Okex.Net.V5.Clients
 		private void OnSocketOpened(object sender, EventArgs e)
 		{
 			_logger.LogTrace($"Socket ({Name}) {Id} is open (state: {_ws.State}): resubscribing...");
-			SendSubscribeToChannels();
+			SendSubscribeToChannels(_subscribedChannels.Values.ToArray());
 		}
 
 		private void OnSocketClosed(object sender, EventArgs e)
@@ -200,24 +202,35 @@ namespace Okex.Net.V5.Clients
 
 		#endregion
 
-		public void SubscribeToTicker(string instrumentName)
+		public void SubscribeToTickers(params string[] instrumentNames)
 		{
-			if (string.IsNullOrWhiteSpace(instrumentName))
-				throw new ArgumentException("Instrument name must not be null or empty", instrumentName);
+			var okexChannels = new List<OkexChannel>(instrumentNames.Length);
+			foreach (var name in instrumentNames)
+			{
+				if (string.IsNullOrWhiteSpace(name))
+					throw new ArgumentException("Instrument name must not be null or empty", name);
 
-			AddChannel(GetTickerChannel(instrumentName));
-			SendSubscribeToChannels();
+				okexChannels.Add(GetTickerChannel(name));
+			}
+
+			SubscribeToChannels(okexChannels);
 		}
 
-		public void SubscribeToBookPrice(string instrumentName, string orderBookType = "books5")
+		public void SubscribeToOrderBooks(string orderBookType = "books5", params string[] instrumentNames)
 		{
-			if (string.IsNullOrWhiteSpace(instrumentName))
-				throw new ArgumentException("Instrument name must not be null or empty", instrumentName);
 			if (string.IsNullOrWhiteSpace(orderBookType))
 				throw new ArgumentException("Order book type must not be null or empty", orderBookType);
 
-			AddChannel(GetBookPriceChannel(instrumentName, orderBookType));
-			SendSubscribeToChannels();
+			var okexChannels = new List<OkexChannel>(instrumentNames.Length);
+			foreach (var name in instrumentNames)
+			{
+				if (string.IsNullOrWhiteSpace(name))
+					throw new ArgumentException("Instrument name must not be null or empty", name);
+
+				okexChannels.Add(GetOrderBookChannel(name, orderBookType));
+			}
+
+			SubscribeToChannels(okexChannels);
 		}
 
 		public void SubscribeToMarkPrice(string instrumentName)
@@ -225,22 +238,41 @@ namespace Okex.Net.V5.Clients
 			if (string.IsNullOrWhiteSpace(instrumentName))
 				throw new ArgumentException("Instrument name must not be null or empty", instrumentName);
 
-			AddChannel(GetMarkPriceChannel(instrumentName));
-			SendSubscribeToChannels();
+			var channel = GetMarkPriceChannel(instrumentName);
+			CashChannels(channel);
+			SendSubscribeToChannels(channel);
 		}
 
-		public void SubscribeTLimitPrice(string instrumentName)
+		public void SubscribeToMarkPrices(params string[] instrumentNames)
 		{
-			if (string.IsNullOrWhiteSpace(instrumentName))
-				throw new ArgumentException("Instrument name must not be null or empty", instrumentName);
+			var okexChannels = new List<OkexChannel>(instrumentNames.Length);
+			foreach (var name in instrumentNames)
+			{
+				if (string.IsNullOrWhiteSpace(name))
+					throw new ArgumentException("Instrument name must not be null or empty", name);
+				okexChannels.Add(GetMarkPriceChannel(name));
+			}
 
-			AddChannel(GetLimitPriceChannel(instrumentName));
-			SendSubscribeToChannels();
+			SubscribeToChannels(okexChannels);
+		}
+
+		public void SubscribeToLimitPrices(params string[] instrumentNames)
+		{
+			var okexChannels = new List<OkexChannel>(instrumentNames.Length);
+			foreach (var name in instrumentNames)
+			{
+				if (string.IsNullOrWhiteSpace(name))
+					throw new ArgumentException("Instrument name must not be null or empty", name);
+
+				okexChannels.Add(GetLimitPriceChannel(name));
+			}
+
+			SubscribeToChannels(okexChannels);
 		}
 
 		public void UnsubscribeBookPriceChannel(string instrumentName, string orderBookType)
 		{
-			var orderBookChannel = GetBookPriceChannel(instrumentName, orderBookType);
+			var orderBookChannel = GetOrderBookChannel(instrumentName, orderBookType);
 			UnsubscribeChannel(orderBookChannel);
 		}
 
@@ -254,7 +286,7 @@ namespace Okex.Net.V5.Clients
 		{
 			var markPriceChannel = GetMarkPriceChannel(instrumentName);
 			UnsubscribeChannel(markPriceChannel);
-		}	
+		}
 
 		public void UnsubscribeLimitPriceChannel(string instrumentName)
 		{
@@ -264,7 +296,7 @@ namespace Okex.Net.V5.Clients
 
 		#region Generate channel strings
 
-		private OkexChannel GetBookPriceChannel(string instrumentName, string orderBookType)
+		private OkexChannel GetOrderBookChannel(string instrumentName, string orderBookType)
 		{
 			var channelName = $"{orderBookType}{instrumentName}";
 			if (_subscribedChannels.TryGetValue(channelName, out var channel))
@@ -273,7 +305,6 @@ namespace Okex.Net.V5.Clients
 			}
 
 			var channelArgs = new Dictionary<string, string> { { "channel", orderBookType }, { "instId", instrumentName } };
-
 			return new OkexChannel(channelName, channelArgs);
 		}
 
@@ -298,7 +329,7 @@ namespace Okex.Net.V5.Clients
 			}
 
 			var channelArgs = new Dictionary<string, string> { { "channel", "mark-price" }, { "instId", instrument } };
-			return  new OkexChannel(channelName, channelArgs);
+			return new OkexChannel(channelName, channelArgs);
 		}
 
 		private OkexChannel GetLimitPriceChannel(string instrumentName)
@@ -317,26 +348,36 @@ namespace Okex.Net.V5.Clients
 
 		#region Subscribe/unsubscribe
 
-		private void AddChannel(OkexChannel channel)
+		private void SubscribeToChannels(List<OkexChannel> channels)
 		{
-			if (!_subscribedChannels.TryGetValue(channel.ChannelName, out var _))
+			var okexChannelsArray = channels.ToArray();
+			CashChannels(okexChannelsArray);
+			SendSubscribeToChannels(okexChannelsArray);
+		}
+
+		private void CashChannels(params OkexChannel[] channels)
+		{
+			foreach (var channel in channels)
 			{
-				_subscribedChannels.Add(channel.ChannelName, channel);
+				if (!_subscribedChannels.TryGetValue(channel.ChannelName, out _))
+				{
+					_subscribedChannels.Add(channel.ChannelName, channel);
+				}
 			}
 		}
 
-		internal void SendSubscribeToChannels()
+		private void SendSubscribeToChannels(params OkexChannel[] channels)
 		{
-			var cacheChannels = _subscribedChannels.ToArray();
-
-			var channelsParams = cacheChannels.Select(x => x.Value.Params).ToArray();
-			if (!channelsParams.Any())
+			var chunks = channels.Chunk(ChunkSize).ToArray();
+			if (!chunks.Any())
 			{
 				return;
 			}
 
-			var request = new OkexSocketRequest("subscribe", channelsParams);
-			Send(request);
+			foreach (var chunk  in chunks)
+			{
+				Send(new OkexSocketRequest("subscribe", chunk.Select(x=> x.Params).ToArray()));
+			}
 		}
 
 		private void UnsubscribeChannel(OkexChannel channel)
@@ -363,7 +404,7 @@ namespace Okex.Net.V5.Clients
 			};
 			_channelProcessorActions = new Dictionary<OkexChannelTypeEnum, Action<OkexSocketResponse>>
 			{
-				{OkexChannelTypeEnum.OrderBook, ProcessBookPrice},
+				{OkexChannelTypeEnum.OrderBook, ProcessOrderBook},
 				{OkexChannelTypeEnum.Ticker, ProcessTicker},
 				{OkexChannelTypeEnum.MarkPrice, ProcessMarkPrice},
 				{OkexChannelTypeEnum.LimitPrice, ProcessLimitPrice}
@@ -440,9 +481,10 @@ namespace Okex.Net.V5.Clients
 			ErrorReceived.Invoke(new ErrorMessage(response.Code, response.Message));
 		}
 
-		private void ProcessBookPrice(OkexSocketResponse response)
+		private void ProcessOrderBook(OkexSocketResponse response)
 		{
 			var data = response.Data?.FirstOrDefault();
+			_logger.LogTrace(data?.ToString());
 			var bookPrice = data?.ToObject<OkexOrderBook>();
 			var instrument = response.Argument["instId"]?.Value<string>();
 			if (bookPrice is null || string.IsNullOrWhiteSpace(instrument))
@@ -482,7 +524,6 @@ namespace Okex.Net.V5.Clients
 			MarkPriceUpdate.Invoke(markPrice);
 		}
 
-
 		private void ProcessLimitPrice(OkexSocketResponse response)
 		{
 			var data = response.Data?.FirstOrDefault();
@@ -494,7 +535,6 @@ namespace Okex.Net.V5.Clients
 
 			LimitPriceUpdate.Invoke(limitPrice);
 		}
-
 
 		#endregion
 
