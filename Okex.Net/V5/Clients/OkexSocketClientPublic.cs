@@ -484,7 +484,6 @@ namespace Okex.Net.V5.Clients
 		private void ProcessOrderBook(OkexSocketResponse response)
 		{
 			var data = response.Data?.FirstOrDefault();
-			_logger.LogTrace(data?.ToString());
 			var bookPrice = data?.ToObject<OkexOrderBook>();
 			var instrument = response.Argument["instId"]?.Value<string>();
 			if (bookPrice is null || string.IsNullOrWhiteSpace(instrument))

@@ -45,6 +45,8 @@ namespace Okex.Net.V5.Clients
 		public event Action<OkexAccountDetails> AccountUpdate = order => { };
 		public event Action<ErrorMessage> ErrorReceived = error => { };
 
+		private const int ChunkSize = 50;
+
 		private bool _onKilled;
 
 		private readonly ILogger _logger;
@@ -218,8 +220,7 @@ namespace Okex.Net.V5.Clients
 
 		public void SubscribeToChangeOrders(OrderInstrumentTypeEnum instrumentType, string underlying = "", string instrumentName = "")
 		{
-			AddChannel(GetOrderChannel(instrumentType, underlying, instrumentName));
-			SendSubscribeToChannels();
+			SubscribeToChannels(GetOrderChannel(instrumentType, underlying, instrumentName));
 		}
 
 		public void UnsubscribeChangeOrderChannel(OrderInstrumentTypeEnum instrumentType, string underlying = "", string instrumentName = "")
@@ -230,8 +231,7 @@ namespace Okex.Net.V5.Clients
 
 		public void SubscribeToChangeAccount(string currency = "")
 		{
-			AddChannel(GetAccountChannel(currency));
-			SendSubscribeToChannels();
+			SubscribeToChannels(GetAccountChannel(currency));
 		}
 
 		public void UnsubscribeToChangeAccountChannel(string currency = "")
@@ -275,27 +275,35 @@ namespace Okex.Net.V5.Clients
 
 		#region Subscribe/unsubscribe
 
-		private void AddChannel(OkexChannel okexChannel)
+		private void SubscribeToChannels(params OkexChannel[] channels)
 		{
-			if (!_subscribedChannels.TryGetValue(okexChannel.ChannelName, out _))
+			CashChannels(channels);
+			SendSubscribeToChannels(channels);
+		}
+
+		private void CashChannels(params OkexChannel[] channels)
+		{
+			foreach (var channel in channels)
 			{
-				_subscribedChannels.Add(okexChannel.ChannelName, okexChannel);
+				if (!_subscribedChannels.TryGetValue(channel.ChannelName, out _))
+				{
+					_subscribedChannels.Add(channel.ChannelName, channel);
+				}
 			}
 		}
 
-		internal void SendSubscribeToChannels()
+		private void SendSubscribeToChannels(params OkexChannel[] channels)
 		{
-			var channelParams = _subscribedChannels
-				.Select(x => x.Value.Params)
-				.ToArray();
-
-			if (!channelParams.Any())
+			var chunks = channels.Chunk(ChunkSize).ToArray();
+			if (!chunks.Any())
 			{
 				return;
 			}
 
-			var request = new OkexSocketRequest("subscribe", channelParams);
-			Send(request);
+			foreach (var chunk in chunks)
+			{
+				Send(new OkexSocketRequest("subscribe", chunk.Select(x => x.Params).ToArray()));
+			}
 		}
 
 		private void UnsubscribeChannel(OkexChannel channel)
@@ -330,7 +338,7 @@ namespace Okex.Net.V5.Clients
 
 		private void ProcessLogin(OkexSocketResponse response)
 		{
-			SendSubscribeToChannels();
+			SubscribeToChannels();
 		}
 
 		private void OnSocketGetMessage(object sender, MessageReceivedEventArgs e)
