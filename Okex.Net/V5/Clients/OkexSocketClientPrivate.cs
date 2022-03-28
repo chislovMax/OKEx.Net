@@ -91,6 +91,7 @@ namespace Okex.Net.V5.Clients
 			catch (Exception e)
 			{
 				_logger.LogTrace($"Socket ({Name}) {Id}  connect failed {e.GetType().Name} (state: {_ws.State}): {e.Message}");
+				ConnectionBroken();
 				throw;
 			}
 		}

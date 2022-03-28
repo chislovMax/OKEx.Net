@@ -38,7 +38,7 @@ namespace Okex.Net.V5.Clients
 		public bool SocketConnected => _ws.State == WebSocketState.Open;
 		public DateTime LastMessageDate { get; private set; } = DateTime.MinValue;
 
-		internal event Action ConnectionBroken = () => { };
+		public event Action ConnectionBroken = () => { };
 		public event Action<OkexOrderBook> BookPriceUpdate = bookPrice => { };
 		public event Action<OkexTicker> TickerUpdate = ticker => { };
 		public event Action<OkexMarkPrice> MarkPriceUpdate = markPrice => { };
@@ -91,11 +91,12 @@ namespace Okex.Net.V5.Clients
 			catch (Exception e)
 			{
 				_logger.LogTrace($"Socket ({Name}) {Id}  connect failed {e.GetType().Name} (state: {_ws.State}): {e.Message}");
+				ConnectionBroken();
 				throw;
 			}
 		}
 
-		public void Disconnect()
+		private void Disconnect()
 		{
 			if (_ws.State == WebSocketState.Closed || _ws.State == WebSocketState.Closing)
 			{
