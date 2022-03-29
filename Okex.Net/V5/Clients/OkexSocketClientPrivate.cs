@@ -38,9 +38,10 @@ namespace Okex.Net.V5.Clients
 		public Guid Id { get; } = Guid.NewGuid();
 		public string Name { get; set; } = "Unnamed";
 		public bool SocketConnected => _ws.State == WebSocketState.Open;
-		public DateTime LastMessageDate { get; private set; } = DateTime.MinValue;
+		public DateTime LastMessageDate { get; private set; } = DateTime.Now;
 
 		public event Action ConnectionBroken = () => { };
+		public event Action ConnectionClosed = () => { };
 		public event Action<OkexOrderDetails> OrderUpdate = order => { };
 		public event Action<OkexAccountDetails> AccountUpdate = order => { };
 		public event Action<ErrorMessage> ErrorReceived = error => { };
@@ -156,6 +157,7 @@ namespace Okex.Net.V5.Clients
 		private void OnSocketClosed(object sender, EventArgs e)
 		{
 			_logger.LogTrace($"Socket ({Name}) {Id} OnSocketClosed... (state: {_ws.State})");
+			ConnectionClosed.Invoke();
 			ReconnectingSocket();
 		}
 
