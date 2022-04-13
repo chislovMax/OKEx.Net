@@ -21,6 +21,7 @@ namespace Okex.Net.CoreObjects
 		private readonly bool signPublicRequests;
 		private readonly ArrayParametersSerialization arraySerialization;
 		private readonly bool _isTest;
+		public bool IsUsedProd;
 
 		public OkexAuthenticationProvider(ApiCredentials credentials, string passPhrase, bool signPublicRequests, ArrayParametersSerialization arraySerialization, bool isTest = false) : base(credentials)
 		{
@@ -38,7 +39,7 @@ namespace Okex.Net.CoreObjects
 		public override Dictionary<string, string> AddAuthenticationToHeaders(string uri, HttpMethod method, Dictionary<string, object> parameters, bool signed, PostParameters postParameterPosition, ArrayParametersSerialization arraySerialization)
 		{
 			var authParams = new Dictionary<string, string>();
-			if (_isTest)
+			if (_isTest && !IsUsedProd)
 			{
 				authParams.Add("x-simulated-trading", "1");
 			}

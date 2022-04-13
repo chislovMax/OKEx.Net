@@ -52,6 +52,10 @@ namespace Okex.Net.V5.Clients
 		private const string Endpoints_MaxSizeAmount = "api/v5/account/max-size";
 		private const string Endpoints_AvailableMaxSizeAmount = "api/v5/account/max-avail-size";
 		private const string Endpoints_Status = "api/v5/system/status";
+		private const string Endpoints_BorrowInfo = "api/v5/asset/lending-rate-summary";
+		private const string Endpoints_BorrowHistory = "api/v5/asset/lending-rate-history";
+		private const string Endpoints_FundingRate = "api/v5/public/funding-rate";
+		private const string Endpoints_FundingRateHistory = "api/v5/public/funding-rate-history";
 
 		#endregion
 
@@ -409,6 +413,86 @@ namespace Okex.Net.V5.Clients
 			}
 
 			return await SendRequest<OkexApiResponse<OkexSystemStatus>>(GetUrl(Endpoints_Status), HttpMethod.Get, ct, okexParams).ConfigureAwait(false);
+		}
+
+		public async Task<WebCallResult<OkexApiResponse<OkexBorrowInfo>>> GetBorrowInfoAsync(string currency, CancellationToken ct = default)
+		{
+			if (!(authProvider is OkexAuthenticationProvider provider))
+			{
+				throw new NullReferenceException($"{nameof(OkexAuthenticationProvider)} is null");
+			}
+			provider.IsUsedProd = true;
+			if (string.IsNullOrWhiteSpace(currency))
+			{
+				throw new ArgumentException("Instrument name must not be null or empty");
+			}
+
+			var parameters = new Dictionary<string, object> { { "ccy", currency } };
+			var result = await SendRequest<OkexApiResponse<OkexBorrowInfo>>(GetUrl(Endpoints_BorrowInfo), HttpMethod.Get, ct, parameters).ConfigureAwait(false);
+			provider.IsUsedProd = false;
+			return result;
+		}
+
+		public async Task<WebCallResult<OkexApiResponse<OkexBorrowHistory>>> GetBorrowHistoryAsync(string currency,
+			long? before, long? after, int? limit, CancellationToken ct = default)
+		{
+			if (!(authProvider is OkexAuthenticationProvider provider))
+			{
+				throw new NullReferenceException($"{nameof(OkexAuthenticationProvider)} is null");
+			}
+			provider.IsUsedProd = true;
+			var parameters = new Dictionary<string, object>();
+			if (!string.IsNullOrWhiteSpace(currency))
+			{
+				parameters.Add("ccy", currency);
+			}
+			if (before.HasValue)
+			{
+				parameters.Add("before", before);
+			}
+			if (after.HasValue)
+			{
+				parameters.Add("after", after);
+			}
+			if (limit.HasValue)
+			{
+				parameters.Add("limit", limit);
+			}
+
+			var result = await SendRequest<OkexApiResponse<OkexBorrowHistory>>(GetUrl(Endpoints_BorrowHistory), HttpMethod.Get, ct, parameters).ConfigureAwait(false);
+			provider.IsUsedProd = false;
+			return result;
+		}
+		
+		public async Task<WebCallResult<OkexApiResponse<OkexFundingRate>>> GetFundingRateAsync(string instId, CancellationToken ct = default)
+		{
+			var parameters = new Dictionary<string, object> { { "instId", instId } };
+
+			return await SendRequest<OkexApiResponse<OkexFundingRate>>(GetUrl(Endpoints_FundingRate), HttpMethod.Get, ct, parameters, signed: true).ConfigureAwait(false);
+		}
+
+		public async Task<WebCallResult<OkexApiResponse<OkexFundingRateHistory>>> GetFundingRateHistoryAsync(string instrumentName,
+			long? before, long? after, int? limit, CancellationToken ct = default)
+		{
+			if (string.IsNullOrWhiteSpace(instrumentName))
+			{
+				throw new ArgumentException("Instrument name must not be null or empty");
+			}
+			var parameters = new Dictionary<string, object> { { "instId", instrumentName } };
+			if (before.HasValue)
+			{
+				parameters.Add("before", before);
+			}
+			if (after.HasValue)
+			{
+				parameters.Add("after", after);
+			}
+			if (limit.HasValue)
+			{
+				parameters.Add("limit", limit);
+			}
+
+			return await SendRequest<OkexApiResponse<OkexFundingRateHistory>>(GetUrl(Endpoints_FundingRateHistory), HttpMethod.Get, ct, parameters).ConfigureAwait(false);
 		}
 
 		protected virtual Uri GetUrl(string endpoint, string param = "")
