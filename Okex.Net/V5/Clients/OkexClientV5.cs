@@ -417,6 +417,7 @@ namespace Okex.Net.V5.Clients
 
 		public async Task<WebCallResult<OkexApiResponse<OkexBorrowInfo>>> GetBorrowInfoAsync(string currency, CancellationToken ct = default)
 		{
+			//TODO Нужен думаю lock
 			if (!(authProvider is OkexAuthenticationProvider provider))
 			{
 				throw new NullReferenceException($"{nameof(OkexAuthenticationProvider)} is null");
