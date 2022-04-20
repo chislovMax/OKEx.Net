@@ -56,6 +56,7 @@ namespace Okex.Net.V5.Clients
 		private const string Endpoints_Status = "api/v5/system/status";
 		private const string Endpoints_BorrowInfo = "api/v5/asset/lending-rate-summary";
 		private const string Endpoints_BorrowHistory = "api/v5/asset/lending-rate-history";
+		private const string Endpoints_FundingRate = "api/v5/public/funding-rate";
 		private const string Endpoints_FundingRateHistory = "api/v5/public/funding-rate-history";
 
 		#endregion
@@ -461,6 +462,13 @@ namespace Okex.Net.V5.Clients
 				ct, 
 				parameters,
 				isUseProd: true).ConfigureAwait(false);
+		}
+
+		public async Task<WebCallResult<OkexApiResponse<OkexFundingRate>>> GetFundingRateAsync(string instId, CancellationToken ct = default)
+		{
+			var parameters = new Dictionary<string, object> { { "instId", instId } };
+
+			return await SendRequest<OkexApiResponse<OkexFundingRate>>(GetUrl(Endpoints_FundingRate), HttpMethod.Get, ct, parameters, signed: true).ConfigureAwait(false);
 		}
 
 		public async Task<WebCallResult<OkexApiResponse<OkexFundingRateHistory>>> GetFundingRateHistoryAsync(string instrumentName,
