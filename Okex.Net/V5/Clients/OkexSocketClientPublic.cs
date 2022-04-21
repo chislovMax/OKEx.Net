@@ -2,10 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.Authentication;
-using System.Threading;
 using System.Threading.Tasks;
-using CryptoExchange.Net;
+using CryptoExchange.Net.Logging;
+using CryptoExchange.Net.Sockets;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -13,8 +12,6 @@ using Okex.Net.Helpers;
 using Okex.Net.V5.Configs;
 using Okex.Net.V5.Enums;
 using Okex.Net.V5.Models;
-using WebSocket4Net;
-using ErrorEventArgs = SuperSocket.ClientEngine.ErrorEventArgs;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 using OkexSocketRequest = Okex.Net.V5.Models.OkexSocketRequest;
 using OkexSocketResponse = Okex.Net.V5.Models.OkexSocketResponse;
@@ -35,7 +32,7 @@ namespace Okex.Net.V5.Clients
 
 		public Guid Id { get; } = Guid.NewGuid();
 		public string Name { get; set; } = "Unnamed";
-		public bool SocketConnected => _ws.State == WebSocketState.Open;
+		public bool SocketConnected => _ws.IsOpen;
 		public DateTime LastMessageDate { get; private set; } = DateTime.Now;
 
 		public event Action ConnectionBroken = () => { };
@@ -48,7 +45,7 @@ namespace Okex.Net.V5.Clients
 
 		private const int ChunkSize = 50;
 
-		private WebSocket _ws;
+		private CryptoExchangeWebSocketClient _ws;
 		private bool _onKilled;
 
 		private readonly ILogger _logger;
@@ -68,7 +65,7 @@ namespace Okex.Net.V5.Clients
 
 		#region Connection
 
-		public void Connect()
+		public async Task ConnectAsync()
 		{
 			try
 			{
@@ -77,9 +74,9 @@ namespace Okex.Net.V5.Clients
 					return;
 				}
 
-				_logger.LogTrace($"Socket ({Name}) {Id} connecting... (state: {_ws.State})");
-				_ws.Open();
-				_logger.LogTrace($"Socket ({Name}) {Id} connected... (state: {_ws.State})");
+				_logger.LogTrace($"Socket ({Name}) {Id} connecting... (IsOpen: {_ws.IsOpen})");
+				await _ws.ConnectAsync().ConfigureAwait(false);
+				_logger.LogTrace($"Socket ({Name}) {Id} connected... (IsOpen: {_ws.IsOpen})");
 			}
 			catch (PlatformNotSupportedException)
 			{
@@ -91,71 +88,71 @@ namespace Okex.Net.V5.Clients
 			}
 			catch (Exception e)
 			{
-				_logger.LogTrace($"Socket ({Name}) {Id}  connect failed {e.GetType().Name} (state: {_ws.State}): {e.Message}");
+				_logger.LogTrace($"Socket ({Name}) {Id}  connect failed {e.GetType().Name} (IsOpen: {_ws.IsOpen}): {e.Message}");
 				ConnectionBroken();
 				throw;
 			}
 		}
 
-		private void Disconnect()
+		private async Task DisconnectAsync()
 		{
-			if (_ws.State == WebSocketState.Closed || _ws.State == WebSocketState.Closing)
+			if (_ws.IsClosed)
 			{
 				return;
 			}
 
-			_logger.LogTrace($"Socket ({Name}) {Id} disconnecting... (state: {_ws.State})");
-			_ws.Close();
-			_logger.LogTrace($"Socket ({Name}) {Id} disconnected... (state: {_ws.State})");
+			_logger.LogTrace($"Socket ({Name}) {Id} disconnecting... (IsOpen: {_ws.IsOpen})");
+			await _ws.CloseAsync().ConfigureAwait(false);
+			_logger.LogTrace($"Socket ({Name}) {Id} disconnected... (IsOpen: {_ws.IsOpen})");
 		}
 
-		public void Reconnect()
+		public async Task ReconnectAsync()
 		{
 			var ws = _ws;
-			_ws.Error -= SocketOnError;
-			_ws.Opened -= OnSocketOpened;
-			_ws.Closed -= OnSocketClosed;
-			_ws.MessageReceived -= OnSocketGetMessage;
+			_ws.OnError -= SocketOnError;
+			_ws.OnOpen -= OnSocketOpened;
+			_ws.OnClose -= OnSocketClosed;
+			_ws.OnMessage -= OnSocketGetMessage;
 
 			CreateSocket();
-			Connect();
+			await ConnectAsync().ConfigureAwait(false);
 
 			ws.Dispose();
 		}
 
-		public void Kill()
+		public async Task KillAsync()
 		{
 			_logger.LogTrace("Socket killing...");
 
 			_onKilled = true;
-			TryDisconnect();
+			await TryDisconnectAsync().ConfigureAwait(false);
 			_ws.Dispose();
 		}
 
-		private void OnSocketOpened(object sender, EventArgs e)
+		private void OnSocketOpened()
 		{
-			_logger.LogTrace($"Socket ({Name}) {Id} is open (state: {_ws.State}): resubscribing...");
+			_logger.LogTrace($"Socket ({Name}) {Id} is open (IsOpen: {_ws.IsOpen}): resubscribing...");
 			SendSubscribeToChannels(_subscribedChannels.Values.ToArray());
 		}
 
-		private void OnSocketClosed(object sender, EventArgs e)
+		private void OnSocketClosed()
 		{
-			_logger.LogTrace($"Socket ({Name}) {Id} OnSocketClosed... (state: {_ws.State})");
+			_logger.LogTrace($"Socket ({Name}) {Id} OnSocketClosed... (IsOpen: {_ws.IsOpen})");
 			ConnectionClosed.Invoke();
-			ReconnectingSocket();
+			ReconnectingSocketAsync().Wait();
 		}
 
-		private void ReconnectingSocket()
+		private async Task ReconnectingSocketAsync()
 		{
 			try
 			{
 				if (_reconnectTime > 0)
 				{
-					Thread.Sleep(_reconnectTime);
+					await Task.Delay(_reconnectTime).ConfigureAwait(false);
 				}
 
-				_logger.LogTrace($"Try connect in reconnecting ({Name}) {Id} failed (state: {_ws.State})");
-				Connect();
+				_logger.LogTrace($"Try connect in reconnecting ({Name}) {Id} failed (IsOpen: {_ws.IsOpen})");
+				await ConnectAsync().ConfigureAwait(false);
 			}
 			catch (Exception e)
 			{
@@ -166,41 +163,37 @@ namespace Okex.Net.V5.Clients
 					return;
 				}
 
-				_logger.LogTrace($"Reconnect ({Name}) {Id} failed (state: {_ws.State}): {errorMessage}");
-				Task.Run(ReconnectingSocket);
+				_logger.LogTrace($"Reconnect ({Name}) {Id} failed (IsOpen: {_ws.IsOpen}): {errorMessage}");
+				 _= Task.Run(ReconnectingSocketAsync);
 			}
 		}
 
-		private void SocketOnError(object sender, ErrorEventArgs e)
+		private void SocketOnError(Exception exception)
 		{
-			_logger.LogTrace($"Socket ({Name}) {Id} (state: {_ws.State}) recieve error: {e.Exception.GetFullTextWithInner()}");
+			_logger.LogTrace($"Socket ({Name}) {Id} (IsOpen: {_ws.IsOpen}) recieve error: {exception.GetFullTextWithInner()}");
 		}
 
-		private void TryDisconnect()
+		private async Task TryDisconnectAsync()
 		{
 			try
 			{
-				Disconnect();
+				await DisconnectAsync().ConfigureAwait(false);
 			}
 			catch (Exception e)
 			{
-				_logger.LogTrace($"Socket ({Name}) {Id} (state: {_ws.State}) error in disconnect: {e.Message}");
-				_logger.LogTrace($"Socket ({Name}) {Id} (state: {_ws.State}) error in disconnect: {e.GetFullTextWithInner()}");
+				_logger.LogTrace($"Socket ({Name}) {Id} (IsOpen: {_ws.IsOpen}) error in disconnect: {e.Message}");
+				_logger.LogTrace($"Socket ({Name}) {Id} (IsOpen: {_ws.IsOpen}) error in disconnect: {e.GetFullTextWithInner()}");
 			}
 		}
 
 		private void CreateSocket()
 		{
-			_ws = new WebSocket(_baseUrl, sslProtocols: SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls)
-			{
-				EnableAutoSendPing = true,
-				AutoSendPingInterval = 10
-			};
+			_ws = new CryptoExchangeWebSocketClient(new Log(nameof(OkexSocketClientPublic)), _baseUrl);
 
-			_ws.Error += SocketOnError;
-			_ws.Opened += OnSocketOpened;
-			_ws.Closed += OnSocketClosed;
-			_ws.MessageReceived += OnSocketGetMessage;
+			_ws.OnError += SocketOnError;
+			_ws.OnOpen += OnSocketOpened;
+			_ws.OnClose += OnSocketClosed;
+			_ws.OnMessage += OnSocketGetMessage;
 		}
 
 		#endregion
@@ -377,9 +370,9 @@ namespace Okex.Net.V5.Clients
 				return;
 			}
 
-			foreach (var chunk  in chunks)
+			foreach (var chunk in chunks)
 			{
-				Send(new OkexSocketRequest("subscribe", chunk.Select(x=> x.Params).ToArray()));
+				Send(new OkexSocketRequest("subscribe", chunk.Select(x => x.Params).ToArray()));
 			}
 		}
 
@@ -414,9 +407,9 @@ namespace Okex.Net.V5.Clients
 			};
 		}
 
-		private void OnSocketGetMessage(object sender, MessageReceivedEventArgs e)
+		private void OnSocketGetMessage(string message)
 		{
-			Task.Run(() => TryProcessMessage(e.Message));
+			Task.Run(() => TryProcessMessage(message));
 		}
 
 		private void TryProcessMessage(string message)
@@ -427,7 +420,7 @@ namespace Okex.Net.V5.Clients
 			}
 			catch (Exception exception)
 			{
-				_logger.LogTrace($"{nameof(SocketClient)} ERROR ON PROCESS MESSAGE.\n {message} \n {exception.GetFullTextWithInner()}.");
+				_logger.LogTrace($"{nameof(OkexSocketClientPublic)} ERROR ON PROCESS MESSAGE.\n {message} \n {exception.GetFullTextWithInner()}.");
 			}
 		}
 
@@ -554,10 +547,10 @@ namespace Okex.Net.V5.Clients
 
 		public void Dispose()
 		{
-			_ws.Error -= SocketOnError;
-			_ws.Opened -= OnSocketOpened;
-			_ws.Closed -= OnSocketClosed;
-			_ws.MessageReceived -= OnSocketGetMessage;
+			_ws.OnError -= SocketOnError;
+			_ws.OnOpen -= OnSocketOpened;
+			_ws.OnClose -= OnSocketClosed;
+			_ws.OnMessage -= OnSocketGetMessage;
 
 			_ws.Dispose();
 		}
