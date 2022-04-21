@@ -1,4 +1,4 @@
-﻿using CryptoExchange.Net.Attributes;
+using CryptoExchange.Net.Attributes;
 using CryptoExchange.Net.Converters;
 using Newtonsoft.Json;
 using Okex.Net.Converters;
@@ -10,23 +10,23 @@ namespace Okex.Net.RestObjects
 {
     public class OkexFuturesOrderBook
     {
-        [JsonProperty("asks")]
-        public IEnumerable<OkexFuturesOrderBookEntry> Asks { get; set; } = new List<OkexFuturesOrderBookEntry>();
+        //[JsonProperty("asks")]
+        //public IEnumerable<OkexFuturesOrderBookEntry> Asks { get; set; } = new List<OkexFuturesOrderBookEntry>();
 
-        [JsonProperty("bids")]
-        public IEnumerable<OkexFuturesOrderBookEntry> Bids { get; set; } = new List<OkexFuturesOrderBookEntry>();
+        //[JsonProperty("bids")]
+        //public IEnumerable<OkexFuturesOrderBookEntry> Bids { get; set; } = new List<OkexFuturesOrderBookEntry>();
 
-        [JsonOptionalProperty, JsonConverter(typeof(OrderBookDataTypeConverter))]
-        public OkexOrderBookDataType DataType { get; set; } = OkexOrderBookDataType.Api;
+        //[JsonOptionalProperty, JsonConverter(typeof(OrderBookDataTypeConverter))]
+        //public OkexOrderBookDataType DataType { get; set; } = OkexOrderBookDataType.Api;
 
-        [JsonProperty("timestamp")]
-        public DateTime Timestamp { get; set; }
+        //[JsonProperty("timestamp")]
+        //public DateTime Timestamp { get; set; }
 
-        [JsonProperty("instrument_id"), JsonOptionalProperty]
-        public string Symbol { get; set; } = "";
+        //[JsonProperty("instrument_id"), JsonOptionalProperty]
+        //public string Symbol { get; set; } = "";
 
-        [JsonProperty("checksum"), JsonOptionalProperty]
-        public long Checksum { get; set; }
+        //[JsonProperty("checksum"), JsonOptionalProperty]
+        //public long Checksum { get; set; }
 
     }
 

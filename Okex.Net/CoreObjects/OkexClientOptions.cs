@@ -5,7 +5,7 @@ namespace Okex.Net.CoreObjects
     /// <summary>
     /// Client Options
     /// </summary>
-    public class OkexClientOptions : RestClientOptions
+    public class OkexClientOptions : RestApiClientOptions
     {
         /// <summary>
         /// Whether public requests should be signed if ApiCredentials are provided. Needed for accurate rate limiting.

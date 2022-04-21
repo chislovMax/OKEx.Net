@@ -19,9 +19,10 @@ using Okex.Net.V5.Models;
 
 namespace Okex.Net.V5.Clients
 {
-	public class OkexClientV5 : RestClient, IOkexClient
+	public class OkexClientV5 : RestApiClient, IOkexClient //TODO поменяли RestCLient на RestApiClient и опции также
 	{
-		public OkexClientV5(string clientName, RestClientOptions exchangeOptions, AuthenticationProvider? authenticationProvider)
+
+		public OkexClientV5(string clientName, RestApiClient exchangeOptions, AuthenticationProvider? authenticationProvider)
 			: base(clientName, exchangeOptions, authenticationProvider)
 		{
 			manualParseError = true;
