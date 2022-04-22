@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
@@ -19,19 +20,31 @@ using Okex.Net.V5.Models;
 
 namespace Okex.Net.V5.Clients
 {
-	public class OkexClientV5 : RestApiClient, IOkexClient //TODO поменяли RestCLient на RestApiClient и опции также
+	public class OkexClientV5 : RestApiClient, IOkexClient
 	{
 
-		public OkexClientV5(string clientName, RestApiClient exchangeOptions, AuthenticationProvider? authenticationProvider)
-			: base(clientName, exchangeOptions, authenticationProvider)
+		public OkexClientV5(OkexBaseClient baseClient, BaseRestClientOptions options, RestApiClientOptions apiOptions) : base(options, apiOptions)
 		{
-			manualParseError = true;
+			_baseClient = baseClient;
 		}
 
-		public OkexClientV5(OkexClientOptions options) : base("Okex", options, options.ApiCredentials == null ? null : new OkexAuthenticationProvider(options.ApiCredentials, "", options.SignPublicRequests, ArrayParametersSerialization.Array))
-		{
-			SignPublicRequests = options.SignPublicRequests;
-		}
+		private readonly OkexBaseClient _baseClient;
+
+		//public OkexClientV5(OkexClientOptions options) : base("", new BaseRestClientOptions())
+		//{
+		//	SignPublicRequests = options.SignPublicRequests;
+		//}
+
+		//public OkexClientV5(string clientName, RestApiClient exchangeOptions, AuthenticationProvider? authenticationProvider)
+		//	: base(clientName, exchangeOptions, authenticationProvider)
+		//{
+		//	manualParseError = true;
+		//}
+
+		//public OkexClientV5(OkexClientOptions options) : base("Okex", options, options.ApiCredentials == null ? null : new OkexAuthenticationProvider(options.ApiCredentials, "", options.SignPublicRequests, ArrayParametersSerialization.Array))
+		//{
+		//	SignPublicRequests = options.SignPublicRequests;
+		//}
 
 		public bool SignPublicRequests { get; }
 
@@ -56,15 +69,21 @@ namespace Okex.Net.V5.Clients
 
 		#endregion
 
+		private SecureString _passPhrase;
+		private OkexAuthenticationProvider _provider;
 
 		public void SetApiCredentials(string apiKey, string apiSecret, string passPhrase, bool isTest = false)
 		{
-			SetAuthenticationProvider(new OkexAuthenticationProvider(new ApiCredentials(apiKey, apiSecret), passPhrase, SignPublicRequests, ArrayParametersSerialization.Array, isTest));
+			var credential = new ApiCredentials(apiKey, apiSecret);
+			SetApiCredentials(new ApiCredentials(apiKey, apiSecret));
+
+			_provider = new OkexAuthenticationProvider(credential, passPhrase.ToSecureString(), SignPublicRequests,
+				ArrayParametersSerialization.Array, isTest);
 		}
 
 		public async Task<WebCallResult<OkexApiResponse<OkexCurrency>>> GetCurrenciesAsync(CancellationToken ct = default)
 		{
-			return await SendRequest<OkexApiResponse<OkexCurrency>>(GetUrl(Endpoints_Currencies), HttpMethod.Get, ct, signed: true).ConfigureAwait(false);
+			return await _baseClient.SendRequestInternal<OkexApiResponse<OkexCurrency>>(this, GetUrl(Endpoints_Currencies), HttpMethod.Get, ct, signed: true).ConfigureAwait(false);
 		}
 
 		public async Task<WebCallResult<OkexApiResponse<OkexInstrument>>> GetInstrumentsAsync(OkexInstrumentTypeEnum okexInstrumentType, string underlying = "", string instId = "", CancellationToken ct = default)
@@ -163,7 +182,7 @@ namespace Okex.Net.V5.Clients
 				parameters.Add("sz", (int)orderParams.Amount);
 			}
 
-			return await SendRequest<OkexApiResponse<OkexOrderInfo>>(GetUrl(Endpoints_PlaceOrder), HttpMethod.Post, ct, parameters, signed: true).ConfigureAwait(false);
+			return await _baseClient.SendRequestInternal<OkexApiResponse<OkexOrderInfo>>(this, GetUrl(Endpoints_PlaceOrder), HttpMethod.Post, ct, parameters, signed: true).ConfigureAwait(false);
 		}
 
 		public async Task<WebCallResult<OkexApiResponse<OkexOrderDetails>>> GetOrderDetailsAsync(string instrumentName, string orderId = "", string clientSuppliedId = "", CancellationToken ct = default)
@@ -187,7 +206,7 @@ namespace Okex.Net.V5.Clients
 				parameters.Add("clOrdId", clientSuppliedId);
 			}
 
-			return await SendRequest<OkexApiResponse<OkexOrderDetails>>(GetUrl(Endpoints_OrderDetails), HttpMethod.Get, ct, parameters, signed: true).ConfigureAwait(false);
+			return await _baseClient.SendRequestInternal<OkexApiResponse<OkexOrderDetails>>(this, GetUrl(Endpoints_OrderDetails), HttpMethod.Get, ct, parameters, signed: true).ConfigureAwait(false);
 		}
 
 		public async Task<WebCallResult<OkexApiResponse<OkexTicker>>> GetTickerAsync(string instrumentName, CancellationToken ct = default)
@@ -403,7 +422,7 @@ namespace Okex.Net.V5.Clients
 
 		public async Task<WebCallResult<OkexApiResponse<OkexSystemStatus>>> GetSystemStatusAsync(OkexMaintenanceStateEnum? maintenanceState = null, CancellationToken ct = default)
 		{
-			var okexParams = new Dictionary<string, object> ();
+			var okexParams = new Dictionary<string, object>();
 			if (maintenanceState.HasValue)
 			{
 				okexParams.Add("state", maintenanceState.ToString());
@@ -421,103 +440,132 @@ namespace Okex.Net.V5.Clients
 			return new Uri($"{BaseAddress.TrimEnd('/')}/{endpoint}");
 		}
 
-		protected override IRequest ConstructRequest(Uri uri, HttpMethod method, Dictionary<string, object>? parameters, bool signed, PostParameters postPosition, ArrayParametersSerialization arraySerialization, int requestId)
+
+		//protected IRequest ConstructRequest(Uri uri, HttpMethod method, Dictionary<string, object>? parameters, bool signed, PostParameters postPosition, ArrayParametersSerialization arraySerialization, int requestId)
+		//{
+		//	return this.OkexConstructRequest(uri, method, parameters, signed, postPosition, arraySerialization, requestId);
+		//}
+
+		//protected virtual IRequest OkexConstructRequest(Uri uri, HttpMethod method, Dictionary<string, object>? parameters, bool signed, PostParameters postPosition, ArrayParametersSerialization arraySerialization, int requestId)
+		//{
+		//	if (parameters == null)
+		//		parameters = new Dictionary<string, object>();
+
+		//	var uriString = uri.ToString();
+			
+		//	if (authProvider != null)
+		//		parameters = authProvider.AddAuthenticationToParameters(uriString, method, parameters, signed, postPosition, arraySerialization);
+
+		//	if ((method == HttpMethod.Get || method == HttpMethod.Delete || postParametersPosition == PostParameters.InUri) && parameters?.Any() == true)
+		//		uriString += "?" + parameters.CreateParamString(true, arraySerialization);
+
+		//	if (method == HttpMethod.Post && signed)
+		//	{
+		//		var uriParamNames = new[] { "AccessKeyId", "SignatureMethod", "SignatureVersion", "Timestamp", "Signature" };
+		//		var uriParams = parameters.Where(p => uriParamNames.Contains(p.Key)).ToDictionary(k => k.Key, k => k.Value);
+		//		uriString += "?" + uriParams.CreateParamString(true, ArrayParametersSerialization.MultipleValues);
+		//		parameters = parameters.Where(p => !uriParamNames.Contains(p.Key)).ToDictionary(k => k.Key, k => k.Value);
+		//	}
+
+		//	var contentType = requestBodyFormat == RequestBodyFormat.Json ? Constants.JsonContentHeader : Constants.FormContentHeader;
+		//	var request = RequestFactory.Create(method, uriString, requestId);
+		//	request.Accept = Constants.JsonContentHeader;
+
+		//	var headers = new Dictionary<string, string>();
+		//	if (authProvider != null)
+		//		headers = authProvider.AddAuthenticationToHeaders(uriString, method, parameters!, signed, postPosition, arraySerialization);
+
+		//	foreach (var header in headers)
+		//		request.AddHeader(header.Key, header.Value);
+
+		//	if ((method == HttpMethod.Post || method == HttpMethod.Put) && postParametersPosition != PostParameters.InUri)
+		//	{
+		//		if (parameters?.Any() == true)
+		//			WriteParamBody(request, parameters, contentType);
+		//		else
+		//			request.SetContent(requestBodyEmptyContent, contentType);
+		//	}
+
+		//	return request;
+		//}
+
+		//protected override void WriteParamBody(IRequest request, Dictionary<string, object> parameters, string contentType)
+		//{
+		//	this.OkexWriteParamBody(request, parameters, contentType);
+		//}
+
+		//protected virtual void OkexWriteParamBody(IRequest request, Dictionary<string, object> parameters, string contentType)
+		//{
+		//	if (requestBodyFormat == RequestBodyFormat.Json)
+		//	{
+		//		if (parameters.Count == 1 && parameters.Keys.First() == BodyParameterKey)
+		//		{
+		//			var stringData = JsonConvert.SerializeObject(parameters[BodyParameterKey]);
+		//			request.SetContent(stringData, contentType);
+		//		}
+		//		else
+		//		{
+		//			var stringData = JsonConvert.SerializeObject(parameters.OrderBy(p => p.Key).ToDictionary(p => p.Key, p => p.Value));
+		//			request.SetContent(stringData, contentType);
+		//		}
+		//	}
+		//	else if (requestBodyFormat == RequestBodyFormat.FormData)
+		//	{
+		//		var formData = HttpUtility.ParseQueryString(string.Empty);
+		//		foreach (var kvp in parameters.OrderBy(p => p.Key))
+		//		{
+		//			if (kvp.Value.GetType().IsArray)
+		//			{
+		//				var array = (Array)kvp.Value;
+		//				foreach (var value in array)
+		//					formData.Add(kvp.Key, value.ToString());
+		//			}
+		//			else
+		//				formData.Add(kvp.Key, kvp.Value.ToString());
+		//		}
+		//		var stringData = formData.ToString();
+		//		request.SetContent(stringData, contentType);
+		//	}
+		//}
+
+		//protected override Error ParseErrorResponse(JToken error)
+		//{
+		//	return this.OkexParseErrorResponse(error);
+		//}
+
+		//protected virtual Error OkexParseErrorResponse(JToken error)
+		//{
+		//	if (error["code"] == null || error["msg"] == null)
+		//		return new ServerError(error.ToString());
+
+		//	return new ServerError((int)error["code"]!, (string)error["msg"]!);
+		//}
+
+		private Task<WebCallResult<T>> SendRequest<T>(Uri uri, HttpMethod method, CancellationToken cancellationToken,
+			Dictionary<string, object>? parameters = null, bool signed = false) where T : class
 		{
-			return this.OkexConstructRequest(uri, method, parameters, signed, postPosition, arraySerialization, requestId);
+			return _baseClient.SendRequestInternal<T>(this, uri, method, cancellationToken, parameters, signed);
 		}
 
-		protected virtual IRequest OkexConstructRequest(Uri uri, HttpMethod method, Dictionary<string, object>? parameters, bool signed, PostParameters postPosition, ArrayParametersSerialization arraySerialization, int requestId)
+
+		protected override TimeSyncInfo GetTimeSyncInfo()
 		{
-			if (parameters == null)
-				parameters = new Dictionary<string, object>();
-
-			var uriString = uri.ToString();
-			if (authProvider != null)
-				parameters = authProvider.AddAuthenticationToParameters(uriString, method, parameters, signed, postPosition, arraySerialization);
-
-			if ((method == HttpMethod.Get || method == HttpMethod.Delete || postParametersPosition == PostParameters.InUri) && parameters?.Any() == true)
-				uriString += "?" + parameters.CreateParamString(true, arraySerialization);
-
-			if (method == HttpMethod.Post && signed)
-			{
-				var uriParamNames = new[] { "AccessKeyId", "SignatureMethod", "SignatureVersion", "Timestamp", "Signature" };
-				var uriParams = parameters.Where(p => uriParamNames.Contains(p.Key)).ToDictionary(k => k.Key, k => k.Value);
-				uriString += "?" + uriParams.CreateParamString(true, ArrayParametersSerialization.MultipleValues);
-				parameters = parameters.Where(p => !uriParamNames.Contains(p.Key)).ToDictionary(k => k.Key, k => k.Value);
-			}
-
-			var contentType = requestBodyFormat == RequestBodyFormat.Json ? Constants.JsonContentHeader : Constants.FormContentHeader;
-			var request = RequestFactory.Create(method, uriString, requestId);
-			request.Accept = Constants.JsonContentHeader;
-
-			var headers = new Dictionary<string, string>();
-			if (authProvider != null)
-				headers = authProvider.AddAuthenticationToHeaders(uriString, method, parameters!, signed, postPosition, arraySerialization);
-
-			foreach (var header in headers)
-				request.AddHeader(header.Key, header.Value);
-
-			if ((method == HttpMethod.Post || method == HttpMethod.Put) && postParametersPosition != PostParameters.InUri)
-			{
-				if (parameters?.Any() == true)
-					WriteParamBody(request, parameters, contentType);
-				else
-					request.SetContent(requestBodyEmptyContent, contentType);
-			}
-
-			return request;
+			throw new NotImplementedException();
 		}
 
-		protected override void WriteParamBody(IRequest request, Dictionary<string, object> parameters, string contentType)
+		public override TimeSpan GetTimeOffset()
 		{
-			this.OkexWriteParamBody(request, parameters, contentType);
+			throw new NotImplementedException();
 		}
 
-		protected virtual void OkexWriteParamBody(IRequest request, Dictionary<string, object> parameters, string contentType)
+		protected override Task<WebCallResult<DateTime>> GetServerTimestampAsync()
 		{
-			if (requestBodyFormat == RequestBodyFormat.Json)
-			{
-				if (parameters.Count == 1 && parameters.Keys.First() == BodyParameterKey)
-				{
-					var stringData = JsonConvert.SerializeObject(parameters[BodyParameterKey]);
-					request.SetContent(stringData, contentType);
-				}
-				else
-				{
-					var stringData = JsonConvert.SerializeObject(parameters.OrderBy(p => p.Key).ToDictionary(p => p.Key, p => p.Value));
-					request.SetContent(stringData, contentType);
-				}
-			}
-			else if (requestBodyFormat == RequestBodyFormat.FormData)
-			{
-				var formData = HttpUtility.ParseQueryString(string.Empty);
-				foreach (var kvp in parameters.OrderBy(p => p.Key))
-				{
-					if (kvp.Value.GetType().IsArray)
-					{
-						var array = (Array)kvp.Value;
-						foreach (var value in array)
-							formData.Add(kvp.Key, value.ToString());
-					}
-					else
-						formData.Add(kvp.Key, kvp.Value.ToString());
-				}
-				var stringData = formData.ToString();
-				request.SetContent(stringData, contentType);
-			}
+			throw new NotImplementedException();
 		}
 
-		protected override Error ParseErrorResponse(JToken error)
+		protected override AuthenticationProvider CreateAuthenticationProvider(ApiCredentials credentials)
 		{
-			return this.OkexParseErrorResponse(error);
-		}
-
-		protected virtual Error OkexParseErrorResponse(JToken error)
-		{
-			if (error["code"] == null || error["msg"] == null)
-				return new ServerError(error.ToString());
-
-			return new ServerError((int)error["code"]!, (string)error["msg"]!);
+			return _provider;
 		}
 	}
 }

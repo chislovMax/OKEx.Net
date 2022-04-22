@@ -5,7 +5,7 @@ namespace Okex.Net.CoreObjects
     /// <summary>
     /// Client Options
     /// </summary>
-    public class OkexClientOptions : RestApiClientOptions
+    public class OkexRestApiClientOptions : RestApiClientOptions
     {
         /// <summary>
         /// Whether public requests should be signed if ApiCredentials are provided. Needed for accurate rate limiting.
@@ -15,11 +15,11 @@ namespace Okex.Net.CoreObjects
         /// <summary>
         /// ctor
         /// </summary>
-        public OkexClientOptions(string url, bool isTest = false) : base(url)
+        public OkexRestApiClientOptions(string url, bool isTest = false) : base(url)
         {
         }
 
-        public OkexClientOptions(string url) : base(url)
+        public OkexRestApiClientOptions(string url) : base(url)
         {
 	        
         }
