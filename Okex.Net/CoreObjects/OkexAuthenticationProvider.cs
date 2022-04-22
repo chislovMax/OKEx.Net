@@ -35,6 +35,8 @@ namespace Okex.Net.CoreObjects
 			this.arraySerialization = arraySerialization;
 		}
 
+		private readonly string BodyParameterKey = "<BODY>";
+
 		public override void AuthenticateRequest(RestApiClient apiClient, Uri uri, HttpMethod method, Dictionary<string, object> parameters, bool signed,
 			ArrayParametersSerialization arraySerialization, HttpMethodParameterPosition parameterPosition,
 			out SortedDictionary<string, object> uriParameters, out SortedDictionary<string, object> bodyParameters, out Dictionary<string, string> headers)
@@ -64,9 +66,9 @@ namespace Okex.Net.CoreObjects
 
 			if (method == HttpMethod.Post)
 			{
-				if (parameters.Count == 1 && parameters.Keys.First() == OkexClient.BodyParameterKey)
+				if (parameters.Count == 1 && parameters.Keys.First() == BodyParameterKey)
 				{
-					var bodyString = JsonConvert.SerializeObject(parameters[OkexClient.BodyParameterKey]);
+					var bodyString = JsonConvert.SerializeObject(parameters[BodyParameterKey]);
 					signtext = signtext + bodyString;
 				}
 				else

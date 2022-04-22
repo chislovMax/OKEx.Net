@@ -1,14 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Web;
 using CryptoExchange.Net;
-using CryptoExchange.Net.Interfaces;
 using CryptoExchange.Net.Objects;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Okex.Net.CoreObjects;
 using Okex.Net.V5.Clients;
@@ -37,6 +33,11 @@ namespace Okex.Net.V5
 			return Task.FromResult(new ServerError((int)error["code"]!, (string)error["msg"]!));
 		}
 
-		public OkexClientV5 Common { get; set; }
+		public OkexClientV5 Common { get; }
+
+		public void SetApiCredentials(string apiKey, string apiSecret, string passPhrase, bool isTest = false)
+		{
+			Common.SetApiCredentials(apiKey, apiSecret, passPhrase, isTest);
+		}
 	}
 }

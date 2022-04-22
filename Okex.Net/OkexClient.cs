@@ -30,7 +30,7 @@ namespace Okex.Net
         /// <summary>
         /// Flag for sending data without root key
         /// </summary>
-        public static readonly string BodyParameterKey = "<BODY>";
+        public static readonly string BodyParameterKey = "<BODY>";	
         #endregion
 
         //#region Private Fields
