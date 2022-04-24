@@ -16,10 +16,10 @@ namespace Okex.Net.CoreObjects
 {
 	public class OkexAuthenticationProvider : AuthenticationProvider
 	{
-		private readonly SecureString? PassPhrase;
-		private readonly HMACSHA256 encryptor;
-		private readonly bool signPublicRequests;
-		private readonly ArrayParametersSerialization arraySerialization;
+		private readonly SecureString? _passPhrase;
+		private readonly HMACSHA256 _encryptor;
+		private readonly bool _signPublicRequests;
+		private readonly ArrayParametersSerialization _arraySerialization;
 		private readonly bool _isTest;
 
 		public OkexAuthenticationProvider(ApiCredentials credentials, SecureString passPhrase, bool signPublicRequests, ArrayParametersSerialization arraySerialization, bool isTest = false) : base(credentials)
@@ -29,10 +29,10 @@ namespace Okex.Net.CoreObjects
 			if (credentials?.Secret == null)
 				throw new ArgumentException("No valid API credentials provided. Key/Secret needed.");
 
-			PassPhrase = passPhrase;
-			encryptor = new HMACSHA256(Encoding.ASCII.GetBytes(credentials.Secret.GetString()));
-			this.signPublicRequests = signPublicRequests;
-			this.arraySerialization = arraySerialization;
+			_passPhrase = passPhrase;
+			_encryptor = new HMACSHA256(Encoding.ASCII.GetBytes(credentials.Secret.GetString()));
+			_signPublicRequests = signPublicRequests;
+			_arraySerialization = arraySerialization;
 		}
 
 		private readonly string BodyParameterKey = "<BODY>";
@@ -55,10 +55,10 @@ namespace Okex.Net.CoreObjects
 				headers.Add("x-simulated-trading", "1");
 			}
 
-			if (!signed && !signPublicRequests)
+			if (!signed && !_signPublicRequests)
 				return;
 
-			if (Credentials?.Key == null || PassPhrase == null)
+			if (Credentials?.Key == null || _passPhrase == null)
 				throw new ArgumentException("No valid API credentials provided. Key/Secret/PassPhrase needed.");
 			var uriString = uri.ToString();
 			var time = (DateTime.UtcNow.ToUnixTimeMilliSeconds() / 1000.0m).ToString(CultureInfo.InvariantCulture);
@@ -69,12 +69,12 @@ namespace Okex.Net.CoreObjects
 				if (parameters.Count == 1 && parameters.Keys.First() == BodyParameterKey)
 				{
 					var bodyString = JsonConvert.SerializeObject(parameters[BodyParameterKey]);
-					signtext = signtext + bodyString;
+					signtext += bodyString;
 				}
 				else
 				{
 					var bodyString = JsonConvert.SerializeObject(parameters.OrderBy(p => p.Key).ToDictionary(p => p.Key, p => p.Value));
-					signtext = signtext + bodyString;
+					signtext += bodyString;
 				}
 			}
 
@@ -83,49 +83,8 @@ namespace Okex.Net.CoreObjects
 			headers.Add("OK-ACCESS-KEY", Credentials.Key.GetString());
 			headers.Add("OK-ACCESS-SIGN", signature);
 			headers.Add("OK-ACCESS-TIMESTAMP", time);
-			headers.Add("OK-ACCESS-PASSPHRASE", PassPhrase.GetString());
+			headers.Add("OK-ACCESS-PASSPHRASE", _passPhrase.GetString());
 		}
-
-		//public override Dictionary<string, string> AddAuthenticationToHeaders(string uri, HttpMethod method, Dictionary<string, object> parameters, bool signed, PostParameters postParameterPosition, ArrayParametersSerialization arraySerialization)
-		//{
-		//	var authParams = new Dictionary<string, string>();
-		//	if (_isTest)
-		//	{
-		//		authParams.Add("x-simulated-trading", "1");
-		//	}
-
-		//	if (!signed && !signPublicRequests)
-		//		return authParams;
-
-		//	if (Credentials == null || Credentials.Key == null || PassPhrase == null)
-		//		throw new ArgumentException("No valid API credentials provided. Key/Secret/PassPhrase needed.");
-
-		//	var time = (DateTime.UtcNow.ToUnixTimeMilliSeconds() / 1000.0m).ToString(CultureInfo.InvariantCulture);
-		//	var signtext = time + method.Method.ToUpper() + uri.Replace("https://www.okx.com", "").Trim('?');
-
-		//	if (method == HttpMethod.Post)
-		//	{
-		//		if (parameters.Count == 1 && parameters.Keys.First() == OkexClient.BodyParameterKey)
-		//		{
-		//			var bodyString = JsonConvert.SerializeObject(parameters[OkexClient.BodyParameterKey]);
-		//			signtext = signtext + bodyString;
-		//		}
-		//		else
-		//		{
-		//			var bodyString = JsonConvert.SerializeObject(parameters.OrderBy(p => p.Key).ToDictionary(p => p.Key, p => p.Value));
-		//			signtext = signtext + bodyString;
-		//		}
-		//	}
-
-		//	var signature = HmacSHA256(signtext, Credentials.Secret?.GetString());
-
-		//	authParams.Add("OK-ACCESS-KEY", Credentials.Key.GetString());
-		//	authParams.Add("OK-ACCESS-SIGN", signature);
-		//	authParams.Add("OK-ACCESS-TIMESTAMP", time);
-		//	authParams.Add("OK-ACCESS-PASSPHRASE", PassPhrase.GetString());
-
-		//	return authParams;
-		//}
 
 		public static string Base64Encode(byte[] plainBytes)
 		{

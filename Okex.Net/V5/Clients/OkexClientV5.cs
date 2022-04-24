@@ -16,17 +16,18 @@ using Okex.Net.V5.Models;
 
 namespace Okex.Net.V5.Clients
 {
-	public class OkexClientV5 : RestApiClient, IDisposable
+	public class OkexClientV5 : RestApiClient
 	{
-		public OkexClientV5(OkexBaseClient baseClient, BaseRestClientOptions options, RestApiClientOptions apiOptions) : base(options, apiOptions)
+		public OkexClientV5(OkexBaseClient baseClient, BaseRestClientOptions options, OkexRestApiClientOptions apiOptions) : base(options, apiOptions)
 		{
 			_baseClient = baseClient;
+			_apiOptions = apiOptions;
 		}
 
 		private readonly OkexBaseClient _baseClient;
-		private readonly string BodyParameterKey = "<BODY>";
+		private readonly OkexRestApiClientOptions _apiOptions;
 
-		public bool SignPublicRequests { get; }
+		private OkexAuthenticationProvider _provider;
 
 		#region V5 EndPoints
 
@@ -47,21 +48,9 @@ namespace Okex.Net.V5.Clients
 
 		#endregion
 
-		private SecureString _passPhrase;
-		private OkexAuthenticationProvider _provider;
-
-		public void SetApiCredentials(string apiKey, string apiSecret, string passPhrase, bool isTest = false)
-		{
-			var credential = new ApiCredentials(apiKey, apiSecret);
-			SetApiCredentials(new ApiCredentials(apiKey, apiSecret));
-
-			_provider = new OkexAuthenticationProvider(credential, passPhrase.ToSecureString(), SignPublicRequests,
-				ArrayParametersSerialization.Array, isTest);
-		}
-
 		public async Task<WebCallResult<OkexApiResponse<OkexCurrency>>> GetCurrenciesAsync(CancellationToken ct = default)
 		{
-			return await _baseClient.SendRequestInternal<OkexApiResponse<OkexCurrency>>(this, GetUrl(Endpoints_Currencies), HttpMethod.Get, ct, signed: true).ConfigureAwait(false);
+			return await SendRequest<OkexApiResponse<OkexCurrency>>( GetUrl(Endpoints_Currencies), HttpMethod.Get, ct, signed: true).ConfigureAwait(false);
 		}
 
 		public async Task<WebCallResult<OkexApiResponse<OkexInstrument>>> GetInstrumentsAsync(OkexInstrumentTypeEnum okexInstrumentType, string underlying = "", string instId = "", CancellationToken ct = default)
@@ -445,13 +434,18 @@ namespace Okex.Net.V5.Clients
 
 		protected override AuthenticationProvider CreateAuthenticationProvider(ApiCredentials credentials)
 		{
+			_provider = new OkexAuthenticationProvider(_apiOptions.ApiCredentials!, _apiOptions.PassPhrase, _apiOptions.SignPublicRequests,
+				ArrayParametersSerialization.Array, _apiOptions.IsTest);
 			return _provider;
 		}
 
-		public void Dispose()
+		public void DisposeClient()
 		{
 			_timeSyncInfo.TimeSyncState.Semaphore.Dispose();
-			_passPhrase.Dispose();
+			_apiOptions.ApiCredentials!.Dispose();
+			_apiOptions.PassPhrase.Dispose();
+
+			Dispose();
 		}
 	}
 }

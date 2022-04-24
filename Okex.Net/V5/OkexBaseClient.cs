@@ -15,7 +15,7 @@ namespace Okex.Net.V5
 	{
 		public OkexBaseClient(BaseRestClientOptions options, OkexRestApiClientOptions okexRestApiOptions) : base("OKEX", options)
 		{
-			Common = new OkexClientV5(this, options, okexRestApiOptions);
+			Common = AddApiClient(new OkexClientV5(this, options, okexRestApiOptions));
 		}
 
 		internal Task<WebCallResult<T>> SendRequestInternal<T>(RestApiClient apiClient, Uri uri, HttpMethod method, CancellationToken cancellationToken,
@@ -35,9 +35,10 @@ namespace Okex.Net.V5
 
 		public OkexClientV5 Common { get; }
 
-		public void SetApiCredentials(string apiKey, string apiSecret, string passPhrase, bool isTest = false)
+		public void DisposeClient()
 		{
-			Common.SetApiCredentials(apiKey, apiSecret, passPhrase, isTest);
+			Common.DisposeClient();
+			Dispose();
 		}
 	}
 }
