@@ -17,9 +17,7 @@ namespace Okex.Net.CoreObjects
 	public class OkexAuthenticationProvider : AuthenticationProvider
 	{
 		private readonly SecureString? _passPhrase;
-		private readonly HMACSHA256 _encryptor;
 		private readonly bool _signPublicRequests;
-		private readonly ArrayParametersSerialization _arraySerialization;
 		private readonly bool _isTest;
 
 		public OkexAuthenticationProvider(ApiCredentials credentials, SecureString passPhrase, bool signPublicRequests, ArrayParametersSerialization arraySerialization, bool isTest = false) : base(credentials)
@@ -30,9 +28,7 @@ namespace Okex.Net.CoreObjects
 				throw new ArgumentException("No valid API credentials provided. Key/Secret needed.");
 
 			_passPhrase = passPhrase;
-			_encryptor = new HMACSHA256(Encoding.ASCII.GetBytes(credentials.Secret.GetString()));
 			_signPublicRequests = signPublicRequests;
-			_arraySerialization = arraySerialization;
 		}
 
 		private readonly string BodyParameterKey = "<BODY>";
@@ -91,12 +87,6 @@ namespace Okex.Net.CoreObjects
 			return System.Convert.ToBase64String(plainBytes);
 		}
 
-		public static string Base64Encode(string plainText)
-		{
-			var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
-			return System.Convert.ToBase64String(plainTextBytes);
-		}
-
 		public string HmacSHA256(string infoStr, string secret)
 		{
 			byte[] sha256Data = Encoding.UTF8.GetBytes(infoStr);
@@ -106,12 +96,6 @@ namespace Okex.Net.CoreObjects
 				byte[] buffer = hmacsha256.ComputeHash(sha256Data);
 				return Convert.ToBase64String(buffer);
 			}
-		}
-
-		public static string Base64Decode(string base64EncodedData)
-		{
-			var base64EncodedBytes = System.Convert.FromBase64String(base64EncodedData);
-			return System.Text.Encoding.UTF8.GetString(base64EncodedBytes);
 		}
 	}
 }
