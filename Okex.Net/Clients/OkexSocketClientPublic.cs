@@ -75,7 +75,11 @@ namespace Okex.Net.Clients
 				}
 
 				_logger.LogTrace($"Socket ({Name}) {Id} connecting... (IsOpen: {_ws.IsOpen})");
-				await _ws.ConnectAsync().ConfigureAwait(false);
+				var isConnect = await _ws.ConnectAsync().ConfigureAwait(false);
+				if (!isConnect)
+				{
+					throw new Exception("Internal socket error");
+				}
 				_logger.LogTrace($"Socket ({Name}) {Id} connected... (IsOpen: {_ws.IsOpen})");
 			}
 			catch (PlatformNotSupportedException)
@@ -164,7 +168,7 @@ namespace Okex.Net.Clients
 				}
 
 				_logger.LogTrace($"Reconnect ({Name}) {Id} failed (IsOpen: {_ws.IsOpen}): {errorMessage}");
-				 _= Task.Run(ReconnectingSocketAsync);
+				_ = Task.Run(ReconnectingSocketAsync);
 			}
 		}
 

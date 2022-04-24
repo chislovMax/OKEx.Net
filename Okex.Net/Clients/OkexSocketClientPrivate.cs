@@ -75,7 +75,12 @@ namespace Okex.Net.Clients
 				}
 
 				_logger.LogTrace($"Socket ({Name}) {Id} connecting... isOpen: {_ws.IsOpen}");
-				await _ws.ConnectAsync().ConfigureAwait(false);
+
+				var isConnect = await _ws.ConnectAsync().ConfigureAwait(false);
+				if (!isConnect)
+				{
+					throw new Exception("Internal socket error");
+				}
 				_logger.LogTrace($"Socket ({Name}) {Id} connected... isOpen {_ws.IsOpen}");
 			}
 			catch (PlatformNotSupportedException)
