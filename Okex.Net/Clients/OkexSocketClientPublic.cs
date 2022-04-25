@@ -41,6 +41,7 @@ namespace Okex.Net.Clients
 		public event Action<OkexTicker> TickerUpdate = ticker => { };
 		public event Action<OkexMarkPrice> MarkPriceUpdate = markPrice => { };
 		public event Action<OkexLimitPrice> LimitPriceUpdate = limitPrice => { };
+		public event Action<OkexFundingRate> FundingRateUpdate = fundingRate => { };
 		public event Action<ErrorMessage> ErrorReceived = error => { };
 
 		private const int ChunkSize = 50;
@@ -58,7 +59,8 @@ namespace Okex.Net.Clients
 			{"books5", OkexChannelTypeEnum.OrderBook},
 			{"tickers", OkexChannelTypeEnum.Ticker},
 			{"mark-price", OkexChannelTypeEnum.MarkPrice},
-			{"price-limit", OkexChannelTypeEnum.LimitPrice}
+			{"price-limit", OkexChannelTypeEnum.LimitPrice},
+			{"funding-rate", OkexChannelTypeEnum.FundingRate}
 		};
 
 		private readonly string _baseUrl;
@@ -270,6 +272,20 @@ namespace Okex.Net.Clients
 			SubscribeToChannels(okexChannels);
 		}
 
+		public void SubscribeToFundingRates(params string[] instrumentNames)
+		{
+			var okexChannels = new List<OkexChannel>(instrumentNames.Length);
+			foreach (var name in instrumentNames)
+			{
+				if (string.IsNullOrWhiteSpace(name))
+					throw new ArgumentException("Instrument name must not be null or empty", name);
+
+				okexChannels.Add(GetFundingRateChannel(name));
+			}
+
+			SubscribeToChannels(okexChannels);
+		}
+
 		public void UnsubscribeBookPriceChannel(string instrumentName, string orderBookType)
 		{
 			var orderBookChannel = GetOrderBookChannel(instrumentName, orderBookType);
@@ -292,6 +308,12 @@ namespace Okex.Net.Clients
 		{
 			var limitPriceChannel = GetLimitPriceChannel(instrumentName);
 			UnsubscribeChannel(limitPriceChannel);
+		}
+
+		public void UnsubscribeFundingRateChannel(string instrumentName)
+		{
+			var fundingRateChannel = GetFundingRateChannel(instrumentName);
+			UnsubscribeChannel(fundingRateChannel);
 		}
 
 		#region Generate channel strings
@@ -341,6 +363,18 @@ namespace Okex.Net.Clients
 			}
 
 			var channelArgs = new Dictionary<string, string> { { "channel", "price-limit" }, { "instId", instrumentName } };
+			return new OkexChannel(channelName, channelArgs);
+		}
+
+		private OkexChannel GetFundingRateChannel(string instrumentName)
+		{
+			const string channelName = "funding-rate";
+			if (_subscribedChannels.TryGetValue(channelName, out var channel))
+			{
+				return channel;
+			}
+
+			var channelArgs = new Dictionary<string, string> { { "channel", channelName }, { "instId", instrumentName } };
 			return new OkexChannel(channelName, channelArgs);
 		}
 
@@ -407,7 +441,8 @@ namespace Okex.Net.Clients
 				{OkexChannelTypeEnum.OrderBook, ProcessOrderBook},
 				{OkexChannelTypeEnum.Ticker, ProcessTicker},
 				{OkexChannelTypeEnum.MarkPrice, ProcessMarkPrice},
-				{OkexChannelTypeEnum.LimitPrice, ProcessLimitPrice}
+				{OkexChannelTypeEnum.LimitPrice, ProcessLimitPrice},
+				{OkexChannelTypeEnum.FundingRate, ProcessFundingRate}
 			};
 		}
 
@@ -533,6 +568,18 @@ namespace Okex.Net.Clients
 			}
 
 			LimitPriceUpdate.Invoke(limitPrice);
+		}
+
+		private void ProcessFundingRate(OkexSocketResponse response)
+		{
+			var data = response.Data?.FirstOrDefault();
+			var fundingRate = data?.ToObject<OkexFundingRate>();
+			if (fundingRate is null)
+			{
+				return;
+			}
+
+			FundingRateUpdate.Invoke(fundingRate);
 		}
 
 		#endregion

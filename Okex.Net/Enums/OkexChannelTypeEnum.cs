@@ -7,6 +7,7 @@ namespace Okex.Net.Enums
 		MarkPrice,
 		Order,
 		Account,
-		LimitPrice
+		LimitPrice,
+		FundingRate
 	}
 }
