@@ -18,12 +18,9 @@ namespace Okex.Net.CoreObjects
 	{
 		private readonly SecureString? _passPhrase;
 		private readonly bool _signPublicRequests;
-		private readonly bool _isTest;
 
-		public OkexAuthenticationProvider(ApiCredentials credentials, SecureString passPhrase, bool signPublicRequests, ArrayParametersSerialization arraySerialization, bool isTest = false) : base(credentials)
+		public OkexAuthenticationProvider(ApiCredentials credentials, SecureString passPhrase, bool signPublicRequests) : base(credentials)
 		{
-			_isTest = isTest;
-
 			if (credentials?.Secret == null)
 				throw new ArgumentException("No valid API credentials provided. Key/Secret needed.");
 
@@ -46,10 +43,6 @@ namespace Okex.Net.CoreObjects
 				: new SortedDictionary<string, object>();
 
 			headers = new Dictionary<string, string>() ;
-			if (_isTest)
-			{
-				headers.Add("x-simulated-trading", "1");
-			}
 
 			if (!signed && !_signPublicRequests)
 				return;

@@ -14,9 +14,9 @@ using Okex.Net.Models;
 
 namespace Okex.Net.Clients
 {
-	public class OkexRestApiClientClient : RestApiClient, IDisposable
+	public class OkexRestApiClient : RestApiClient, IDisposable
 	{
-		public OkexRestApiClientClient(OkexBaseRestClient baseClient, BaseRestClientOptions options, OkexRestApiClientOptions apiOptions) : base(options, apiOptions)
+		public OkexRestApiClient(OkexBaseRestClient baseClient, BaseRestClientOptions options, OkexRestApiClientOptions apiOptions) : base(options, apiOptions)
 		{
 			_baseClient = baseClient;
 			_apiOptions = apiOptions;
@@ -44,6 +44,10 @@ namespace Okex.Net.Clients
 		private const string Endpoints_MaxSizeAmount = "api/v5/account/max-size";
 		private const string Endpoints_AvailableMaxSizeAmount = "api/v5/account/max-avail-size";
 		private const string Endpoints_Status = "api/v5/system/status";
+		private const string Endpoints_BorrowInfo = "api/v5/asset/lending-rate-summary";
+		private const string Endpoints_BorrowHistory = "api/v5/asset/lending-rate-history";
+		private const string Endpoints_FundingRate = "api/v5/public/funding-rate";
+		private const string Endpoints_FundingRateHistory = "api/v5/public/funding-rate-history";
 
 		#endregion
 
@@ -63,8 +67,7 @@ namespace Okex.Net.Clients
 
 		protected override AuthenticationProvider CreateAuthenticationProvider(ApiCredentials credentials)
 		{
-			_provider = new OkexAuthenticationProvider(_apiOptions.ApiCredentials!, _apiOptions.PassPhrase, _apiOptions.SignPublicRequests,
-				ArrayParametersSerialization.Array, _apiOptions.IsTest);
+			_provider = new OkexAuthenticationProvider(_apiOptions.ApiCredentials!, _apiOptions.PassPhrase, _apiOptions.SignPublicRequests);
 			return _provider;
 		}
 
@@ -72,12 +75,12 @@ namespace Okex.Net.Clients
 
 		#region Rest
 
-		public async Task<WebCallResult<OkexApiResponse<OkexCurrency>>> GetCurrenciesAsync(CancellationToken ct = default)
+		public Task<WebCallResult<OkexApiResponse<OkexCurrency>>> GetCurrenciesAsync(CancellationToken ct = default)
 		{
-			return await SendRequest<OkexApiResponse<OkexCurrency>>(GetUrl(Endpoints_Currencies), HttpMethod.Get, ct, signed: true).ConfigureAwait(false);
+			return SendRequestAsync<OkexApiResponse<OkexCurrency>>(GetUrl(Endpoints_Currencies), HttpMethod.Get, ct, signed: true);
 		}
 
-		public async Task<WebCallResult<OkexApiResponse<OkexInstrument>>> GetInstrumentsAsync(OkexInstrumentTypeEnum okexInstrumentType, string underlying = "", string instId = "", CancellationToken ct = default)
+		public Task<WebCallResult<OkexApiResponse<OkexInstrument>>> GetInstrumentsAsync(OkexInstrumentTypeEnum okexInstrumentType, string underlying = "", string instId = "", CancellationToken ct = default)
 		{
 			var parameters = new Dictionary<string, object> { { "instType", okexInstrumentType.ToString() } };
 
@@ -93,10 +96,10 @@ namespace Okex.Net.Clients
 			if (!string.IsNullOrWhiteSpace(instId))
 				parameters.Add("instId", instId);
 
-			return await SendRequest<OkexApiResponse<OkexInstrument>>(GetUrl(Endpoints_Instruments), HttpMethod.Get, ct, parameters).ConfigureAwait(false);
+			return SendRequestAsync<OkexApiResponse<OkexInstrument>>(GetUrl(Endpoints_Instruments), HttpMethod.Get, ct, parameters);
 		}
 
-		public async Task<WebCallResult<OkexApiResponse<OkexOrderBook>>> GetOrderBookAsync(string instrumentName, string depth = "1", CancellationToken ct = default)
+		public Task<WebCallResult<OkexApiResponse<OkexOrderBook>>> GetOrderBookAsync(string instrumentName, string depth = "1", CancellationToken ct = default)
 		{
 			if (string.IsNullOrWhiteSpace(instrumentName))
 			{
@@ -105,10 +108,10 @@ namespace Okex.Net.Clients
 
 			var parameters = new Dictionary<string, object> { { "instId", instrumentName }, { "sz", depth } };
 
-			return await SendRequest<OkexApiResponse<OkexOrderBook>>(GetUrl(Endpoints_OrderBooks), HttpMethod.Get, ct, parameters).ConfigureAwait(false);
+			return SendRequestAsync<OkexApiResponse<OkexOrderBook>>(GetUrl(Endpoints_OrderBooks), HttpMethod.Get, ct, parameters);
 		}
 
-		public async Task<WebCallResult<OkexApiResponse<OkexOrderInfo>>> PlaceOrderAsync(OkexOrderParams orderParams, CancellationToken ct = default)
+		public Task<WebCallResult<OkexApiResponse<OkexOrderInfo>>> PlaceOrderAsync(OkexOrderParams orderParams, CancellationToken ct = default)
 		{
 			var parameters = new Dictionary<string, object>();
 			if (string.IsNullOrWhiteSpace(orderParams.InstrumentName))
@@ -173,10 +176,10 @@ namespace Okex.Net.Clients
 				parameters.Add("sz", (int)orderParams.Amount);
 			}
 
-			return await _baseClient.SendRequestInternal<OkexApiResponse<OkexOrderInfo>>(this, GetUrl(Endpoints_PlaceOrder), HttpMethod.Post, ct, parameters, signed: true).ConfigureAwait(false);
+			return SendRequestAsync<OkexApiResponse<OkexOrderInfo>>(GetUrl(Endpoints_PlaceOrder), HttpMethod.Post, ct, parameters, signed: true);
 		}
 
-		public async Task<WebCallResult<OkexApiResponse<OkexOrderDetails>>> GetOrderDetailsAsync(string instrumentName, string orderId = "", string clientSuppliedId = "", CancellationToken ct = default)
+		public Task<WebCallResult<OkexApiResponse<OkexOrderDetails>>> GetOrderDetailsAsync(string instrumentName, string orderId = "", string clientSuppliedId = "", CancellationToken ct = default)
 		{
 			if (string.IsNullOrWhiteSpace(instrumentName))
 			{
@@ -197,10 +200,10 @@ namespace Okex.Net.Clients
 				parameters.Add("clOrdId", clientSuppliedId);
 			}
 
-			return await _baseClient.SendRequestInternal<OkexApiResponse<OkexOrderDetails>>(this, GetUrl(Endpoints_OrderDetails), HttpMethod.Get, ct, parameters, signed: true).ConfigureAwait(false);
+			return SendRequestAsync<OkexApiResponse<OkexOrderDetails>>(GetUrl(Endpoints_OrderDetails), HttpMethod.Get, ct, parameters, signed: true);
 		}
 
-		public async Task<WebCallResult<OkexApiResponse<OkexTicker>>> GetTickerAsync(string instrumentName, CancellationToken ct = default)
+		public Task<WebCallResult<OkexApiResponse<OkexTicker>>> GetTickerAsync(string instrumentName, CancellationToken ct = default)
 		{
 			if (string.IsNullOrWhiteSpace(instrumentName))
 			{
@@ -212,10 +215,10 @@ namespace Okex.Net.Clients
 				{"instId", instrumentName}
 			};
 
-			return await SendRequest<OkexApiResponse<OkexTicker>>(GetUrl(Endpoints_Ticker), HttpMethod.Get, ct, parameters, signed: false).ConfigureAwait(false);
+			return SendRequestAsync<OkexApiResponse<OkexTicker>>(GetUrl(Endpoints_Ticker), HttpMethod.Get, ct, parameters, signed: false);
 		}
 
-		public async Task<WebCallResult<OkexApiResponse<OkexOrderDetails>>> GetOrderListAsync(
+		public Task<WebCallResult<OkexApiResponse<OkexOrderDetails>>> GetOrderListAsync(
 			OkexOrderListParams listParams, CancellationToken ct = default)
 		{
 			if (listParams.State.HasValue && (listParams.State != OkexOrderStateEnum.live || listParams.State != OkexOrderStateEnum.partially_filled))
@@ -264,10 +267,10 @@ namespace Okex.Net.Clients
 				parameters.Add("limit", listParams.BeforeOrderId);
 			}
 
-			return await SendRequest<OkexApiResponse<OkexOrderDetails>>(GetUrl(Endpoints_OrderList), HttpMethod.Get, ct, parameters, signed: true).ConfigureAwait(false);
+			return SendRequestAsync<OkexApiResponse<OkexOrderDetails>>(GetUrl(Endpoints_OrderList), HttpMethod.Get, ct, parameters, signed: true);
 		}
 
-		public async Task<WebCallResult<OkexApiResponse<OkexOrderDetails>>> GetOrderHistoryAsync(
+		public Task<WebCallResult<OkexApiResponse<OkexOrderDetails>>> GetOrderHistoryAsync(
 			OkexOrderListParams listParams, CancellationToken ct = default)
 		{
 			if (listParams.State.HasValue && (listParams.State != OkexOrderStateEnum.live || listParams.State != OkexOrderStateEnum.partially_filled))
@@ -316,10 +319,10 @@ namespace Okex.Net.Clients
 				parameters.Add("limit", listParams.BeforeOrderId);
 			}
 
-			return await SendRequest<OkexApiResponse<OkexOrderDetails>>(GetUrl(Endpoints_OrderHistory), HttpMethod.Get, ct, parameters, signed: true).ConfigureAwait(false);
+			return SendRequestAsync<OkexApiResponse<OkexOrderDetails>>(GetUrl(Endpoints_OrderHistory), HttpMethod.Get, ct, parameters, signed: true);
 		}
 
-		public async Task<WebCallResult<OkexApiResponse<OkexAccountDetails>>> GetBalancesAsync(string currency = "", CancellationToken ct = default)
+		public Task<WebCallResult<OkexApiResponse<OkexAccountDetails>>> GetBalancesAsync(string currency = "", CancellationToken ct = default)
 		{
 			var parameters = new Dictionary<string, object>();
 			if (!string.IsNullOrWhiteSpace(currency))
@@ -327,15 +330,15 @@ namespace Okex.Net.Clients
 				parameters.Add("ccy", currency);
 			}
 
-			return await SendRequest<OkexApiResponse<OkexAccountDetails>>(GetUrl(Endpoints_Balances), HttpMethod.Get, ct, parameters, signed: true).ConfigureAwait(false);
+			return SendRequestAsync<OkexApiResponse<OkexAccountDetails>>(GetUrl(Endpoints_Balances), HttpMethod.Get, ct, parameters, signed: true);
 		}
 
-		public async Task<WebCallResult<OkexApiResponse<OkexAccountConfig>>> GetAccountConfigAsync(CancellationToken ct = default)
+		public Task<WebCallResult<OkexApiResponse<OkexAccountConfig>>> GetAccountConfigAsync(CancellationToken ct = default)
 		{
-			return await SendRequest<OkexApiResponse<OkexAccountConfig>>(GetUrl(Endpoints_AccountConfig), HttpMethod.Get, ct, signed: true).ConfigureAwait(false);
+			return SendRequestAsync<OkexApiResponse<OkexAccountConfig>>(GetUrl(Endpoints_AccountConfig), HttpMethod.Get, ct, signed: true);
 		}
 
-		public async Task<WebCallResult<OkexApiResponse<OkexOrderInfo>>> CancelOrderAsync(string instrumentName, string orderId = "", string clientOrderId = "", CancellationToken ct = default)
+		public Task<WebCallResult<OkexApiResponse<OkexOrderInfo>>> CancelOrderAsync(string instrumentName, string orderId = "", string clientOrderId = "", CancellationToken ct = default)
 		{
 			if (string.IsNullOrWhiteSpace(instrumentName))
 				throw new ArgumentException("Instrument name must not be null or empty");
@@ -355,11 +358,11 @@ namespace Okex.Net.Clients
 				okexParams.Add("clOrdId", clientOrderId);
 			}
 
-			return await SendRequest<OkexApiResponse<OkexOrderInfo>>(GetUrl(Endpoints_CancelOrder), HttpMethod.Post, ct, okexParams,
-				signed: true).ConfigureAwait(false);
+			return SendRequestAsync<OkexApiResponse<OkexOrderInfo>>(GetUrl(Endpoints_CancelOrder), HttpMethod.Post, ct, okexParams,
+				signed: true);
 		}
 
-		public async Task<WebCallResult<OkexApiResponse<AmountMaxSizeInfo>>> GetAmountMaxSizeAsync(string instrumentName,
+		public Task<WebCallResult<OkexApiResponse<AmountMaxSizeInfo>>> GetAmountMaxSizeAsync(string instrumentName,
 			OkexTradeModeEnum tradeMode, string currency = "", decimal? price = null, decimal? leverage = null, CancellationToken ct = default)
 		{
 			if (string.IsNullOrWhiteSpace(instrumentName))
@@ -381,11 +384,11 @@ namespace Okex.Net.Clients
 				okexParams.Add("leverage", leverage);
 			}
 
-			return await SendRequest<OkexApiResponse<AmountMaxSizeInfo>>(GetUrl(Endpoints_MaxSizeAmount), HttpMethod.Get, ct, okexParams,
-				signed: true).ConfigureAwait(false);
+			return SendRequestAsync<OkexApiResponse<AmountMaxSizeInfo>>(GetUrl(Endpoints_MaxSizeAmount), HttpMethod.Get, ct, okexParams,
+				signed: true);
 		}
 
-		public async Task<WebCallResult<OkexApiResponse<AvailableMaxSizeInfo>>> GetAvailableAmountMaxSizeAsync(string instrumentName,
+		public Task<WebCallResult<OkexApiResponse<AvailableMaxSizeInfo>>> GetAvailableAmountMaxSizeAsync(string instrumentName,
 			OkexTradeModeEnum tradeMode, string currency = "", decimal? price = null, decimal? leverage = null, CancellationToken ct = default)
 		{
 			if (string.IsNullOrWhiteSpace(instrumentName))
@@ -407,11 +410,11 @@ namespace Okex.Net.Clients
 				okexParams.Add("leverage", leverage);
 			}
 
-			return await SendRequest<OkexApiResponse<AvailableMaxSizeInfo>>(GetUrl(Endpoints_AvailableMaxSizeAmount), HttpMethod.Get, ct, okexParams,
-				signed: true).ConfigureAwait(false);
+			return SendRequestAsync<OkexApiResponse<AvailableMaxSizeInfo>>(GetUrl(Endpoints_AvailableMaxSizeAmount), HttpMethod.Get, ct, okexParams,
+				signed: true);
 		}
 
-		public async Task<WebCallResult<OkexApiResponse<OkexSystemStatus>>> GetSystemStatusAsync(OkexMaintenanceStateEnum? maintenanceState = null, CancellationToken ct = default)
+		public Task<WebCallResult<OkexApiResponse<OkexSystemStatus>>> GetSystemStatusAsync(OkexMaintenanceStateEnum? maintenanceState = null, CancellationToken ct = default)
 		{
 			var okexParams = new Dictionary<string, object>();
 			if (maintenanceState.HasValue)
@@ -419,9 +422,85 @@ namespace Okex.Net.Clients
 				okexParams.Add("state", maintenanceState.ToString());
 			}
 
-			return await SendRequest<OkexApiResponse<OkexSystemStatus>>(GetUrl(Endpoints_Status), HttpMethod.Get, ct, okexParams).ConfigureAwait(false);
+			return SendRequestAsync<OkexApiResponse<OkexSystemStatus>>(GetUrl(Endpoints_Status), HttpMethod.Get, ct, okexParams);
 		}
 
+
+		public Task<WebCallResult<OkexApiResponse<OkexBorrowInfo>>> GetBorrowInfoAsync(string? currency, CancellationToken ct = default)
+		{
+			var parameters = new Dictionary<string, object?>();
+			if (!string.IsNullOrWhiteSpace(currency))
+			{
+				parameters.Add("ccy", currency);
+			}
+
+			return SendRequestAsync<OkexApiResponse<OkexBorrowInfo>>(
+				GetUrl(Endpoints_BorrowInfo),
+				HttpMethod.Get,
+				ct,
+				parameters,
+				useProd: true);
+		}
+
+		public Task<WebCallResult<OkexApiResponse<OkexBorrowHistory>>> GetBorrowHistoryAsync(string currency,
+			long? before, long? after, int? limit, CancellationToken ct = default)
+		{
+			var parameters = new Dictionary<string, object>();
+			if (!string.IsNullOrWhiteSpace(currency))
+			{
+				parameters.Add("ccy", currency);
+			}
+			if (before.HasValue)
+			{
+				parameters.Add("before", before);
+			}
+			if (after.HasValue)
+			{
+				parameters.Add("after", after);
+			}
+			if (limit.HasValue)
+			{
+				parameters.Add("limit", limit);
+			}
+
+			return SendRequestAsync<OkexApiResponse<OkexBorrowHistory>>(
+				GetUrl(Endpoints_BorrowHistory),
+				HttpMethod.Get,
+				ct,
+				parameters,
+				useProd: true);
+		}
+
+		public Task<WebCallResult<OkexApiResponse<OkexFundingRate>>> GetFundingRateAsync(string instId, CancellationToken ct = default)
+		{
+			var parameters = new Dictionary<string, object> { { "instId", instId } };
+
+			return SendRequestAsync<OkexApiResponse<OkexFundingRate>>(GetUrl(Endpoints_FundingRate), HttpMethod.Get, ct, parameters, signed: true);
+		}
+
+		public Task<WebCallResult<OkexApiResponse<OkexFundingRateHistory>>> GetFundingRateHistoryAsync(string instrumentName,
+			long? before, long? after, int? limit, CancellationToken ct = default)
+		{
+			if (string.IsNullOrWhiteSpace(instrumentName))
+			{
+				throw new ArgumentException("Instrument name must not be null or empty");
+			}
+			var parameters = new Dictionary<string, object> { { "instId", instrumentName } };
+			if (before.HasValue)
+			{
+				parameters.Add("before", before);
+			}
+			if (after.HasValue)
+			{
+				parameters.Add("after", after);
+			}
+			if (limit.HasValue)
+			{
+				parameters.Add("limit", limit);
+			}
+
+			return SendRequestAsync<OkexApiResponse<OkexFundingRateHistory>>(GetUrl(Endpoints_FundingRateHistory), HttpMethod.Get, ct, parameters);
+		}
 
 		#endregion
 
@@ -434,11 +513,12 @@ namespace Okex.Net.Clients
 			return new Uri($"{BaseAddress.TrimEnd('/')}/{endpoint}");
 		}
 
-		private Task<WebCallResult<T>> SendRequest<T>(Uri uri, HttpMethod method, CancellationToken cancellationToken,
-			Dictionary<string, object>? parameters = null, bool signed = false) where T : class
+		private Task<WebCallResult<T>> SendRequestAsync<T>(Uri uri, HttpMethod method, CancellationToken cancellationToken,
+			Dictionary<string, object>? parameters = null, bool signed = false, bool useProd = false) where T : class
 		{
-			return _baseClient.SendRequestInternal<T>(this, uri, method, cancellationToken, parameters, signed);
+			return _baseClient.SendRequestAsync<T>(this, uri, method, cancellationToken, parameters, signed, useProd: useProd);
 		}
+
 
 		public new void Dispose()
 		{

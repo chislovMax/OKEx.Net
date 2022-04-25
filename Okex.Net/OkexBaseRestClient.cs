@@ -1,10 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using CryptoExchange.Net;
+using CryptoExchange.Net.Interfaces;
 using CryptoExchange.Net.Objects;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Okex.Net.Clients;
 using Okex.Net.CoreObjects;
@@ -15,17 +19,87 @@ namespace Okex.Net
 	{
 		public OkexBaseRestClient(BaseRestClientOptions options, OkexRestApiClientOptions okexRestApiOptions) : base("OKEX", options)
 		{
-			Common = AddApiClient(new OkexRestApiClientClient(this, options, okexRestApiOptions));
+			Common = AddApiClient(new OkexRestApiClient(this, options, okexRestApiOptions));
+			_isTest = okexRestApiOptions.IsTest;
 		}
 
-		internal Task<WebCallResult<T>> SendRequestInternal<T>(RestApiClient apiClient, Uri uri, HttpMethod method, CancellationToken cancellationToken,
-			Dictionary<string, object>? parameters = null, bool signed = false, HttpMethodParameterPosition? postPosition = null,
-			ArrayParametersSerialization? arraySerialization = null, int weight = 1, bool ignoreRateLimit = false) where T : class
+		private readonly bool _isTest;
+
+		internal async Task<WebCallResult<T>> SendRequestAsync<T>(
+			RestApiClient apiClient,
+			Uri uri,
+			HttpMethod method,
+			CancellationToken cancellationToken,
+			Dictionary<string, object>? parameters = null,
+			bool signed = false,
+			HttpMethodParameterPosition? parameterPosition = null,
+			ArrayParametersSerialization? arraySerialization = null,
+			int requestWeight = 1,
+			JsonSerializer? deserializer = null,
+			Dictionary<string, string>? additionalHeaders = null,
+			bool ignoreRatelimit = false,
+			bool useProd = false
+		) where T : class
 		{
-			return base.SendRequestAsync<T>(apiClient, uri, method, cancellationToken, parameters, signed, postPosition, arraySerialization, requestWeight: weight, ignoreRatelimit: ignoreRateLimit);
+			var requestId = NextId();
+			//TODO реализовать
+			//if (signed)
+			//{
+			//	var syncTimeResult = await Common.SyncTimeAsync().ConfigureAwait(false);
+			//	if (!syncTimeResult)
+			//	{
+			//		log.Write(LogLevel.Debug,
+			//			$"[{requestId}] Failed to sync time, aborting request: " + syncTimeResult.Error);
+			//		return syncTimeResult.As<T>(default);
+			//	}
+			//}
+
+			//if (!ignoreRatelimit)
+			//{
+			//	foreach (var limiter in Common.RateLimiters)
+			//	{
+			//		var limitResult = await limiter.LimitRequestAsync(log, uri.AbsolutePath, method, signed,
+			//			apiClient.Options.ApiCredentials?.Key, apiClient.Options.RateLimitingBehaviour, requestWeight,
+			//			cancellationToken).ConfigureAwait(false);
+			//		if (!limitResult.Success)
+			//			return new WebCallResult<T>(limitResult.Error!);
+			//	}
+			//}
+
+			if (signed && apiClient.AuthenticationProvider == null)
+			{
+				log.Write(LogLevel.Warning,
+					$"[{requestId}] Request {uri.AbsolutePath} failed because no ApiCredentials were provided");
+				return new WebCallResult<T>(new NoApiCredentialsError());
+			}
+
+			log.Write(LogLevel.Information, $"[{requestId}] Creating request for " + uri);
+			var paramsPosition = parameterPosition ?? apiClient.ParameterPositions[method];
+			var request = ConstructRequest(apiClient, uri, method, parameters, signed, paramsPosition,
+				arraySerialization ?? apiClient.arraySerialization, requestId, additionalHeaders);
+			if (_isTest && !useProd)
+			{
+				request.AddHeader("x-simulated-trading", "1");
+			}
+
+			string? paramString = "";
+			if (paramsPosition == HttpMethodParameterPosition.InBody)
+				paramString = $" with request body '{request.Content}'";
+
+			var headers = request.GetHeaders();
+			if (headers.Any())
+				paramString += " with headers " +
+									string.Join(", ", headers.Select(h => h.Key + $"=[{string.Join(",", h.Value)}]"));
+
+
+			apiClient.TotalRequestsMade++;
+			log.Write(LogLevel.Trace,
+				$"[{requestId}] Sending {method}{(signed ? " signed" : "")} request to {request.Uri}{paramString ?? " "}{(ClientOptions.Proxy == null ? "" : $" via proxy {ClientOptions.Proxy.Host}")}");
+			return await GetResponseAsync<T>(apiClient, request, deserializer, cancellationToken).ConfigureAwait(false);
+
 		}
 
-		public OkexRestApiClientClient Common { get; }
+		public OkexRestApiClient Common { get; }
 
 		protected override Error ParseErrorResponse(JToken error)
 		{
