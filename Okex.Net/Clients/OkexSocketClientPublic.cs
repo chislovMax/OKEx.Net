@@ -145,33 +145,7 @@ namespace Okex.Net.Clients
 		{
 			_logger.LogTrace($"Socket ({Name}) {Id} OnSocketClosed... (IsOpen: {_ws.IsOpen})");
 			ConnectionClosed.Invoke();
-			ReconnectingSocketAsync().Wait();
-		}
-
-		private async Task ReconnectingSocketAsync()
-		{
-			try
-			{
-				if (_reconnectTime > 0)
-				{
-					await Task.Delay(_reconnectTime).ConfigureAwait(false);
-				}
-
-				_logger.LogTrace($"Try connect in reconnecting ({Name}) {Id} failed (IsOpen: {_ws.IsOpen})");
-				await ConnectAsync().ConfigureAwait(false);
-			}
-			catch (Exception e)
-			{
-				var errorMessage = e.GetFullTextWithInner();
-				if (errorMessage.Contains("you needn't connect again!")
-					 || errorMessage.Contains("cannot connect again!"))
-				{
-					return;
-				}
-
-				_logger.LogTrace($"Reconnect ({Name}) {Id} failed (IsOpen: {_ws.IsOpen}): {errorMessage}");
-				_ = Task.Run(ReconnectingSocketAsync);
-			}
+			ReconnectAsync().Wait();
 		}
 
 		private void SocketOnError(Exception exception)
@@ -241,7 +215,7 @@ namespace Okex.Net.Clients
 				throw new ArgumentException("Instrument name must not be null or empty", instrumentName);
 
 			var channel = GetMarkPriceChannel(instrumentName);
-			CashChannels(channel);
+			СacheChannels(channel);
 			SendSubscribeToChannels(channel);
 		}
 
@@ -385,11 +359,11 @@ namespace Okex.Net.Clients
 		private void SubscribeToChannels(List<OkexChannel> channels)
 		{
 			var okexChannelsArray = channels.ToArray();
-			CashChannels(okexChannelsArray);
+			СacheChannels(okexChannelsArray);
 			SendSubscribeToChannels(okexChannelsArray);
 		}
 
-		private void CashChannels(params OkexChannel[] channels)
+		private void СacheChannels(params OkexChannel[] channels)
 		{
 			foreach (var channel in channels)
 			{
@@ -527,8 +501,22 @@ namespace Okex.Net.Clients
 			}
 
 			bookPrice.InstrumentName = instrument;
-			BookPriceUpdate.Invoke(bookPrice);
+			if (bookPrice.InstrumentName != "BTC-USDT-SWAP")
+			{
+				return;
+			}
+
+			if (lastOrderBook.Book != null && bookPrice.TimeStamp == lastOrderBook.Book.TimeStamp)
+			{
+				_logger.LogTrace($"\n\n\n NEW{JsonConvert.SerializeObject(bookPrice)}\n\n\n");
+				_logger.LogTrace($"\n\n\n OLD{JsonConvert.SerializeObject(lastOrderBook)}\n\n\n");
+			}
+
+			lastOrderBook.Book = bookPrice;
+			lastOrderBook.Time = DateTime.Now;
 		}
+
+		private Test lastOrderBook = new Test();
 
 		private void ProcessTicker(OkexSocketResponse response)
 		{
@@ -605,5 +593,11 @@ namespace Okex.Net.Clients
 
 			_ws.Dispose();
 		}
+	}
+
+	struct Test
+	{
+		public OkexOrderBook Book { get; set; }
+		public DateTime Time { get; set; }
 	}
 }

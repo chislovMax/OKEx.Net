@@ -160,7 +160,7 @@ namespace Okex.Net.Clients
 		{
 			_logger.LogTrace($"Socket ({Name}) {Id} OnSocketClosed... (isOpen: {_ws.IsOpen})");
 			ConnectionClosed.Invoke();
-			ReconnectingSocketAsync().Wait();
+			ReconnectAsync().Wait();
 		}
 
 		private async Task ReconnectingSocketAsync()
