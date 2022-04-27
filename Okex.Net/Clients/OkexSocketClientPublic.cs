@@ -501,22 +501,8 @@ namespace Okex.Net.Clients
 			}
 
 			bookPrice.InstrumentName = instrument;
-			if (bookPrice.InstrumentName != "BTC-USDT-SWAP")
-			{
-				return;
-			}
-
-			if (lastOrderBook.Book != null && bookPrice.TimeStamp == lastOrderBook.Book.TimeStamp)
-			{
-				_logger.LogTrace($"\n\n\n NEW{JsonConvert.SerializeObject(bookPrice)}\n\n\n");
-				_logger.LogTrace($"\n\n\n OLD{JsonConvert.SerializeObject(lastOrderBook)}\n\n\n");
-			}
-
-			lastOrderBook.Book = bookPrice;
-			lastOrderBook.Time = DateTime.Now;
+			BookPriceUpdate.Invoke(bookPrice);
 		}
-
-		private Test lastOrderBook = new Test();
 
 		private void ProcessTicker(OkexSocketResponse response)
 		{
@@ -593,11 +579,5 @@ namespace Okex.Net.Clients
 
 			_ws.Dispose();
 		}
-	}
-
-	struct Test
-	{
-		public OkexOrderBook Book { get; set; }
-		public DateTime Time { get; set; }
 	}
 }
