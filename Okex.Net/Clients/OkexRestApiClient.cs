@@ -443,20 +443,20 @@ namespace Okex.Net.Clients
 		}
 
 		public Task<WebCallResult<OkexApiResponse<OkexBorrowHistory>>> GetBorrowHistoryAsync(string currency,
-			long? before, long? after, int? limit, CancellationToken ct = default)
+            long? since, long? until, int? limit, CancellationToken ct = default)
 		{
 			var parameters = new Dictionary<string, object>();
 			if (!string.IsNullOrWhiteSpace(currency))
 			{
 				parameters.Add("ccy", currency);
 			}
-			if (before.HasValue)
+			if (since.HasValue)
 			{
-				parameters.Add("before", before);
+				parameters.Add("before", since);
 			}
-			if (after.HasValue)
+			if (until.HasValue)
 			{
-				parameters.Add("after", after);
+				parameters.Add("after", until);
 			}
 			if (limit.HasValue)
 			{
@@ -478,21 +478,22 @@ namespace Okex.Net.Clients
 			return SendRequestAsync<OkexApiResponse<OkexFundingRate>>(GetUrl(Endpoints_FundingRate), HttpMethod.Get, ct, parameters, signed: true);
 		}
 
-		public Task<WebCallResult<OkexApiResponse<OkexFundingRateHistory>>> GetFundingRateHistoryAsync(string instrumentName,
-			long? before, long? after, int? limit, CancellationToken ct = default)
+		public Task<WebCallResult<OkexApiResponse<OkexFundingRateHistory>>> GetFundingRateHistoryAsync(
+            string instrumentName,
+            long? since, long? until, int? limit, CancellationToken ct = default)
 		{
 			if (string.IsNullOrWhiteSpace(instrumentName))
 			{
 				throw new ArgumentException("Instrument name must not be null or empty");
 			}
 			var parameters = new Dictionary<string, object> { { "instId", instrumentName } };
-			if (before.HasValue)
+			if (since.HasValue)
 			{
-				parameters.Add("before", before);
+				parameters.Add("before", since);
 			}
-			if (after.HasValue)
+			if (until.HasValue)
 			{
-				parameters.Add("after", after);
+				parameters.Add("after", until);
 			}
 			if (limit.HasValue)
 			{
