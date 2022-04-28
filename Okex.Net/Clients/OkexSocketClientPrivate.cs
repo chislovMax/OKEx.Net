@@ -1,35 +1,24 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using CryptoExchange.Net.Logging;
-using CryptoExchange.Net.Sockets;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Okex.Net.Configs;
-using Okex.Net.CoreObjects;
 using Okex.Net.Enums;
-using Okex.Net.Helpers;
 using Okex.Net.Models;
 
 namespace Okex.Net.Clients
 {
 	public class OkexSocketClientPrivate : OkexBaseSocketClient
 	{
-		public OkexSocketClientPrivate(ILogger logger, OkexCredential credential, OkexApiConfig clientConfig) : base(logger, clientConfig)
+		public OkexSocketClientPrivate(ILogger logger, OkexCredential credential, OkexApiConfig clientConfig)
+			: base(logger, clientConfig, clientConfig.WSUrlPrivate)
 		{
 			SetCredential(credential);
 
 			AddChannelHandler(OkexChannelTypeEnum.Order, ProcessOrder);
 			AddChannelHandler(OkexChannelTypeEnum.Account, ProcessAccount);
 		}
-		
+
 		protected override Dictionary<string, OkexChannelTypeEnum> ChannelTypes { get; set; } = new Dictionary<string, OkexChannelTypeEnum>
 		{
 			{"orders", OkexChannelTypeEnum.Order},

@@ -12,7 +12,8 @@ namespace Okex.Net.Clients
 {
 	public class OkexSocketClientPublic : OkexBaseSocketClient
 	{
-		public OkexSocketClientPublic(ILogger logger, OkexApiConfig clientConfig) : base(logger, clientConfig)
+		public OkexSocketClientPublic(ILogger logger, OkexApiConfig clientConfig)
+			: base(logger, clientConfig, clientConfig.WSUrlPublic)
 		{
 			AddChannelHandler(OkexChannelTypeEnum.OrderBook, ProcessOrderBook);
 			AddChannelHandler(OkexChannelTypeEnum.Ticker, ProcessTicker);

@@ -23,13 +23,14 @@ namespace Okex.Net
 {
 	public abstract class OkexBaseSocketClient : IDisposable
 	{
-		protected OkexBaseSocketClient(ILogger logger, OkexApiConfig clientConfig)
+		protected OkexBaseSocketClient(ILogger logger, OkexApiConfig clientConfig, string url)
 		{
 			_logger = logger;
 			_clientConfig = clientConfig;
-			_baseUrl = clientConfig.WSUrlPublic;
+			_baseUrl = url;
 
 			InitProcessors();
+
 			CreateSocket();
 		}
 
@@ -42,13 +43,12 @@ namespace Okex.Net
 		public bool SocketConnected => _ws.IsOpen;
 		public DateTime LastMessageDate { get; private set; } = DateTime.Now;
 
+		private string _baseUrl;
 		protected abstract Dictionary<string, OkexChannelTypeEnum> ChannelTypes { get; set; }
-
 		protected readonly Dictionary<string, OkexChannel> SubscribedChannels = new Dictionary<string, OkexChannel>();
 
 		private const int ChunkSize = 50;
 
-		private readonly string _baseUrl;
 		private readonly ILogger _logger;
 		private OkexCredential? _credential;
 		private readonly OkexApiConfig _clientConfig;
@@ -327,7 +327,7 @@ namespace Okex.Net
 
 		protected virtual void OnSocketOpened()
 		{
-			_logger.LogTrace($"Socket ({Name}) {Id} is open (IsOpen: {_ws.IsOpen}): resubscribing...");
+			_logger.LogTrace($"Socket ({Name}) {Id} is open (IsOpen: {_ws.IsOpen})");
 			if (_credential is null)
 			{
 				SendSubscribeToChannels(SubscribedChannels.Values.ToArray());
