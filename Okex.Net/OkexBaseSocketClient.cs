@@ -52,7 +52,7 @@ namespace Okex.Net
 		private readonly ILogger _logger;
 		private OkexCredential? _credential;
 		private readonly OkexApiConfig _clientConfig;
-		private readonly SemaphoreSlim _semaphoreSlimReconnect = new SemaphoreSlim(1);
+		private readonly SemaphoreSlim _semaphoreSlimReconnect = new SemaphoreSlim(1,1);
 
 		private CryptoExchangeWebSocketClient _ws;
 		private DateTime _lastConnectTime = DateTime.MinValue;
