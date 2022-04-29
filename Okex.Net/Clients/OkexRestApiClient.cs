@@ -28,7 +28,7 @@ namespace Okex.Net.Clients
 
 		private OkexAuthenticationProvider _provider;
 
-		#region V5 EndPoints
+		#region EndPoints
 
 		private const string Endpoints_Currencies = "api/v5/asset/currencies";
 		private const string Endpoints_Instruments = "api/v5/public/instruments";
@@ -48,6 +48,7 @@ namespace Okex.Net.Clients
 		private const string Endpoints_BorrowHistory = "api/v5/asset/lending-rate-history";
 		private const string Endpoints_FundingRate = "api/v5/public/funding-rate";
 		private const string Endpoints_FundingRateHistory = "api/v5/public/funding-rate-history";
+		private const string Endpoints_TradeFee = "/api/v5/account/trade-fee";
 
 		#endregion
 
@@ -425,7 +426,6 @@ namespace Okex.Net.Clients
 			return SendRequestAsync<OkexApiResponse<OkexSystemStatus>>(GetUrl(Endpoints_Status), HttpMethod.Get, ct, okexParams);
 		}
 
-
 		public Task<WebCallResult<OkexApiResponse<OkexBorrowInfo>>> GetBorrowInfoAsync(string? currency, CancellationToken ct = default)
 		{
 			var parameters = new Dictionary<string, object?>();
@@ -501,6 +501,29 @@ namespace Okex.Net.Clients
 			}
 
 			return SendRequestAsync<OkexApiResponse<OkexFundingRateHistory>>(GetUrl(Endpoints_FundingRateHistory), HttpMethod.Get, ct, parameters);
+		}
+
+
+		public Task<WebCallResult<OkexApiResponse<OkexTradeFee>>> GetTradeFeeAsync(OkexInstrumentTypeEnum instrumentType,
+			string? instrumentId, string? uly, OkexFeeCategoryEnum? category, CancellationToken ct = default)
+		{
+			var parameters = new Dictionary<string, object> { { "instType", instrumentType } };
+
+			if (!string.IsNullOrWhiteSpace(instrumentId))
+			{
+				parameters.Add("instId", instrumentId!);
+			}
+
+			if (!string.IsNullOrWhiteSpace(uly))
+			{
+				parameters.Add("uly", uly!);
+			}
+
+			if (category.HasValue)
+			{
+				parameters.Add("category", category);
+			}
+			return SendRequestAsync<OkexApiResponse<OkexTradeFee>>(GetUrl(Endpoints_TradeFee), HttpMethod.Get, ct, parameters, true);
 		}
 
 		#endregion
