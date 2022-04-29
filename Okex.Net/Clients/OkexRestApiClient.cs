@@ -48,6 +48,7 @@ namespace Okex.Net.Clients
 		private const string Endpoints_BorrowHistory = "api/v5/asset/lending-rate-history";
 		private const string Endpoints_FundingRate = "api/v5/public/funding-rate";
 		private const string Endpoints_FundingRateHistory = "api/v5/public/funding-rate-history";
+		private const string Endpoints_CandleStickList = "api/v5/market/candles";
 
 		#endregion
 
@@ -501,6 +502,34 @@ namespace Okex.Net.Clients
 			}
 
 			return SendRequestAsync<OkexApiResponse<OkexFundingRateHistory>>(GetUrl(Endpoints_FundingRateHistory), HttpMethod.Get, ct, parameters);
+		}
+
+		public Task<WebCallResult<OkexApiResponse<OkexCandleStick>>> GetCandleStickListAsync(string instrumentName, string? timeFrame, long? since = null, long? until = null,
+			int? limit = null, CancellationToken ct = default)
+		{
+			if (string.IsNullOrWhiteSpace(instrumentName))
+			{
+				throw new ArgumentException("Instrument name must not be null or empty");
+			}
+			var parameters = new Dictionary<string, object> { { "instId", instrumentName } };
+			if (!string.IsNullOrWhiteSpace(timeFrame))
+			{
+				parameters.Add("bar", timeFrame);
+			}
+			if (since.HasValue)
+			{
+				parameters.Add("before", since);
+			}
+			if (until.HasValue)
+			{
+				parameters.Add("after", until);
+			}
+			if (limit.HasValue)
+			{
+				parameters.Add("limit", limit);
+			}
+
+			return SendRequestAsync<OkexApiResponse<OkexCandleStick>>(GetUrl(Endpoints_CandleStickList), HttpMethod.Get, ct, parameters);
 		}
 
 		#endregion
