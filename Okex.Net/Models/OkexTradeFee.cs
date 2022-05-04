@@ -12,9 +12,9 @@ namespace Okex.Net.Models
 		[JsonProperty("maker")]
 		public decimal Maker { get; set; }
 		[JsonProperty("delivery")]
-		public decimal Delivery { get; set; }
+		public decimal? Delivery { get; set; }
 		[JsonProperty("exercise")]
-		public decimal Exercise { get; set; }
+		public decimal? Exercise { get; set; }
 		[JsonProperty("level")]
 		public string Level { get; set; }
 		[JsonProperty("instType")]

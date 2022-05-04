@@ -12,7 +12,7 @@ namespace Okex.Net.Models
 		[JsonProperty("uly")]
 		public string Underlying { get; set; }
 		[JsonProperty("category")]
-		public string Category { get; set; }
+		public OkexFeeCategoryEnum Category { get; set; }
 		[JsonProperty("baseCcy")]
 		public string BaseCurrency { get; set; }
 		[JsonProperty("quoteCcy")]
