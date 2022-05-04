@@ -8,6 +8,7 @@ namespace Okex.Net.Enums
 		Order,
 		Account,
 		LimitPrice,
-		FundingRate
+		FundingRate,
+		Candle1H
 	}
 }

@@ -15,6 +15,7 @@ namespace Okex.Net.Clients
 		public OkexSocketClientPublic(ILogger logger, OkexApiConfig clientConfig)
 			: base(logger, clientConfig, clientConfig.WSUrlPublic)
 		{
+			AddChannelHandler(OkexChannelTypeEnum.Candle1H, ProcessCandle);
 			AddChannelHandler(OkexChannelTypeEnum.OrderBook, ProcessOrderBook);
 			AddChannelHandler(OkexChannelTypeEnum.Ticker, ProcessTicker);
 			AddChannelHandler(OkexChannelTypeEnum.MarkPrice, ProcessMarkPrice);
@@ -23,6 +24,7 @@ namespace Okex.Net.Clients
 		}
 
 		public event Action<OkexOrderBook> BookPriceUpdate = bookPrice => { };
+		public event Action<OkexCandleStick> CandleUpdate = candle => { };
 		public event Action<OkexTicker> TickerUpdate = ticker => { };
 		public event Action<OkexMarkPrice> MarkPriceUpdate = markPrice => { };
 		public event Action<OkexLimitPrice> LimitPriceUpdate = limitPrice => { };
@@ -30,6 +32,7 @@ namespace Okex.Net.Clients
 
 		protected override Dictionary<string, OkexChannelTypeEnum> ChannelTypes { get; set; } = new Dictionary<string, OkexChannelTypeEnum>
 		{
+			{"candle1H", OkexChannelTypeEnum.Candle1H},
 			{"books5", OkexChannelTypeEnum.OrderBook},
 			{"tickers", OkexChannelTypeEnum.Ticker},
 			{"mark-price", OkexChannelTypeEnum.MarkPrice},
@@ -121,6 +124,19 @@ namespace Okex.Net.Clients
 			SubscribeToChannels(okexChannels.ToArray());
 		}
 
+		public void SubscribeToCandleSticks(string timeFrame, params string[] instrumentNames)
+		{
+			var okexChannels = new List<OkexChannel>(instrumentNames.Length);
+			foreach (var name in instrumentNames)
+			{
+				if (string.IsNullOrWhiteSpace(name))
+					throw new ArgumentException("Instrument name must not be null or empty", name);
+
+				okexChannels.Add(GetCandleSticksChannel(name, timeFrame));
+			}
+
+			SubscribeToChannels(okexChannels.ToArray());
+		}
 
 		public void UnsubscribeBookPriceChannel(string instrumentName, string orderBookType)
 		{
@@ -150,6 +166,12 @@ namespace Okex.Net.Clients
 		{
 			var fundingRateChannel = GetFundingRateChannel(instrumentName);
 			UnsubscribeChannel(fundingRateChannel);
+		}
+
+		public void UnsubscribeToCandleStickChannel(string timeFrame, string instrumentName)
+		{
+			var candleStickChannel = GetCandleSticksChannel(instrumentName, timeFrame);
+			UnsubscribeChannel(candleStickChannel);
 		}
 
 		#endregion
@@ -222,9 +244,33 @@ namespace Okex.Net.Clients
 			FundingRateUpdate.Invoke(fundingRate);
 		}
 
+		private void ProcessCandle(OkexSocketResponse response)
+		{
+			var data = response.Data?.FirstOrDefault();
+			var candleStick = data?.ToObject<OkexCandleStick>();
+			if (candleStick is null)
+			{
+				return;
+			}
+
+			CandleUpdate.Invoke(candleStick);
+		}
+
 		#endregion
 
 		#region Generate channel strings
+
+		private OkexChannel GetCandleSticksChannel(string instrumentName, string timeFrame)
+		{
+			var channelName = $"candle{timeFrame}{instrumentName}";
+			if (SubscribedChannels.TryGetValue(channelName, out var channel))
+			{
+				return channel;
+			}
+
+			var channelArgs = new Dictionary<string, string> { { "channel", $"candle{timeFrame}" }, { "instId", instrumentName } };
+			return new OkexChannel(channelName, channelArgs);
+		}
 
 		private OkexChannel GetOrderBookChannel(string instrumentName, string orderBookType)
 		{
