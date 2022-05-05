@@ -48,7 +48,7 @@ namespace Okex.Net.Clients
 		private const string Endpoints_BorrowHistory = "api/v5/asset/lending-rate-history";
 		private const string Endpoints_FundingRate = "api/v5/public/funding-rate";
 		private const string Endpoints_FundingRateHistory = "api/v5/public/funding-rate-history";
-		private const string Endpoints_TradeFee = "/api/v5/account/trade-fee";
+		private const string Endpoints_TradeFee = "api/v5/account/trade-fee";
 
 		#endregion
 
@@ -505,7 +505,7 @@ namespace Okex.Net.Clients
 
 
 		public Task<WebCallResult<OkexApiResponse<OkexTradeFee>>> GetTradeFeeAsync(OkexInstrumentTypeEnum instrumentType,
-			string? instrumentId, string? uly, OkexFeeCategoryEnum? category, CancellationToken ct = default)
+			string? instrumentId = null, string? uly = null, OkexFeeCategoryEnum? category = null, CancellationToken ct = default)
 		{
 			var parameters = new Dictionary<string, object> { { "instType", instrumentType } };
 
@@ -518,11 +518,11 @@ namespace Okex.Net.Clients
 			{
 				parameters.Add("uly", uly!);
 			}
-
 			if (category.HasValue)
 			{
-				parameters.Add("category", category);
+				parameters.Add("category", (int)category);
 			}
+
 			return SendRequestAsync<OkexApiResponse<OkexTradeFee>>(GetUrl(Endpoints_TradeFee), HttpMethod.Get, ct, parameters, true);
 		}
 
@@ -542,7 +542,6 @@ namespace Okex.Net.Clients
 		{
 			return _baseClient.SendRequestAsync<T>(this, uri, method, cancellationToken, parameters, signed, useProd: useProd);
 		}
-
 
 		public new void Dispose()
 		{
