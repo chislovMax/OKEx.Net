@@ -44,5 +44,6 @@ namespace Okex.Net.Enums
 		OrderAmountExceedsMax = 51202,
 		OrderAmountExceedsLimit = 51203,
 		OrderAlreadyCompleted = 51402,
+		CurrencyNotSupportedBySavingsAccount = 58003,
 	}
 }
