@@ -505,7 +505,7 @@ namespace Okex.Net.Clients
 
 
 		public Task<WebCallResult<OkexApiResponse<OkexTradeFee>>> GetTradeFeeAsync(OkexInstrumentTypeEnum instrumentType,
-			string? instrumentId = null, string? uly = null, OkexFeeCategoryEnum? category = null, CancellationToken ct = default)
+			string? instrumentId = null, string? uly = null, CancellationToken ct = default)
 		{
 			var parameters = new Dictionary<string, object> { { "instType", instrumentType } };
 
@@ -517,10 +517,6 @@ namespace Okex.Net.Clients
 			if (!string.IsNullOrWhiteSpace(uly))
 			{
 				parameters.Add("uly", uly!);
-			}
-			if (category.HasValue)
-			{
-				parameters.Add("category", (int)category);
 			}
 
 			return SendRequestAsync<OkexApiResponse<OkexTradeFee>>(GetUrl(Endpoints_TradeFee), HttpMethod.Get, ct, parameters, true);
