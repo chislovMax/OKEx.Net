@@ -27,7 +27,7 @@ namespace Okex.Net
 		{
 			_logger = logger;
 			_clientConfig = clientConfig;
-			_baseUrl = url;
+			_baseUrl = new Uri(url);
 
 			InitProcessors();
 
@@ -43,16 +43,16 @@ namespace Okex.Net
 		public bool SocketConnected => _ws.IsOpen;
 		public DateTime LastMessageDate { get; private set; } = DateTime.Now;
 
-		private string _baseUrl;
 		protected abstract Dictionary<string, OkexChannelTypeEnum> ChannelTypes { get; set; }
 		protected readonly Dictionary<string, OkexChannel> SubscribedChannels = new Dictionary<string, OkexChannel>();
 
 		private const int ChunkSize = 50;
 
+		private readonly Uri _baseUrl;
 		private readonly ILogger _logger;
 		private OkexCredential? _credential;
 		private readonly OkexApiConfig _clientConfig;
-		private readonly SemaphoreSlim _semaphoreSlimReconnect = new SemaphoreSlim(1,1);
+		private readonly SemaphoreSlim _semaphoreSlimReconnect = new SemaphoreSlim(1, 1);
 
 		private CryptoExchangeWebSocketClient _ws;
 		private DateTime _lastConnectTime = DateTime.MinValue;
@@ -104,6 +104,8 @@ namespace Okex.Net
 				{
 					throw new Exception("Internal socket error");
 				}
+
+				_ = _ws.ProcessAsync();
 				_logger.LogTrace($"Socket ({Name}) {Id} connected... (IsOpen: {_ws.IsOpen})");
 			}
 			catch (PlatformNotSupportedException)

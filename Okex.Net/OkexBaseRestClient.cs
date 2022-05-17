@@ -41,29 +41,6 @@ namespace Okex.Net
 		) where T : class
 		{
 			var requestId = NextId();
-			//TODO реализовать
-			//if (signed)
-			//{
-			//	var syncTimeResult = await Common.SyncTimeAsync().ConfigureAwait(false);
-			//	if (!syncTimeResult)
-			//	{
-			//		log.Write(LogLevel.Debug,
-			//			$"[{requestId}] Failed to sync time, aborting request: " + syncTimeResult.Error);
-			//		return syncTimeResult.As<T>(default);
-			//	}
-			//}
-
-			//if (!ignoreRatelimit)
-			//{
-			//	foreach (var limiter in Common.RateLimiters)
-			//	{
-			//		var limitResult = await limiter.LimitRequestAsync(log, uri.AbsolutePath, method, signed,
-			//			apiClient.Options.ApiCredentials?.Key, apiClient.Options.RateLimitingBehaviour, requestWeight,
-			//			cancellationToken).ConfigureAwait(false);
-			//		if (!limitResult.Success)
-			//			return new WebCallResult<T>(limitResult.Error!);
-			//	}
-			//}
 
 			if (signed && apiClient.AuthenticationProvider == null)
 			{
@@ -94,7 +71,7 @@ namespace Okex.Net
 			apiClient.TotalRequestsMade++;
 			log.Write(LogLevel.Trace,
 				$"[{requestId}] Sending {method}{(signed ? " signed" : "")} request to {request.Uri}{paramString ?? " "}{(ClientOptions.Proxy == null ? "" : $" via proxy {ClientOptions.Proxy.Host}")}");
-			return await GetResponseAsync<T>(apiClient, request, deserializer, cancellationToken).ConfigureAwait(false);
+			return await GetResponseAsync<T>(apiClient, request, deserializer, cancellationToken, false).ConfigureAwait(false);
 
 		}
 
