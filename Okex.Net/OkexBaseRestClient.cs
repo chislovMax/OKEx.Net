@@ -60,7 +60,7 @@ namespace Okex.Net
 			}
 
 			apiClient.TotalRequestsMade++;
-			return await GetResponseAsync<T>(apiClient, request, deserializer, cancellationToken).ConfigureAwait(false);
+			return await GetResponseAsync<T>(apiClient, request, deserializer, cancellationToken, false).ConfigureAwait(false);
 		}
 
 		protected override IRequest ConstructRequest(RestApiClient apiClient, Uri uri, HttpMethod method, Dictionary<string, object>? parameters, bool signed,
@@ -79,7 +79,7 @@ namespace Okex.Net
 			if (parameterPosition == HttpMethodParameterPosition.InUri)
 			{
 				foreach (var parameter in parameters)
-			return await GetResponseAsync<T>(apiClient, request, deserializer, cancellationToken, false).ConfigureAwait(false);
+					uri = uri.AddQueryParmeter(parameter.Key, parameter.Value.ToString());
 			}
 
 			var headers = new Dictionary<string, string>();
