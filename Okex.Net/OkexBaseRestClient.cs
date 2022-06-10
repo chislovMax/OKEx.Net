@@ -69,13 +69,6 @@ namespace Okex.Net
 		{
 			parameters ??= new Dictionary<string, object>();
 
-			for (var i = 0; i < parameters.Count; i++)
-			{
-				var kvp = parameters.ElementAt(i);
-				if (kvp.Value is Func<object> delegateValue)
-					parameters[kvp.Key] = delegateValue();
-			}
-
 			if (parameterPosition == HttpMethodParameterPosition.InUri)
 			{
 				foreach (var parameter in parameters)
@@ -99,9 +92,6 @@ namespace Okex.Net
 					 out bodyParameters,
 					 out headers);
 
-
-			// Add the auth parameters to the uri, start with a new URI to be able to sort the parameters including the auth parameters            
-			uri = uri.SetUriParameters(parameters, arraySerialization);
 			var request = RequestFactory.Create(method, uri, requestId);
 			request.Accept = Constants.JsonContentHeader;
 

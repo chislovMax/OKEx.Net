@@ -48,8 +48,7 @@ namespace Okex.Net.CoreObjects
 				throw new ArgumentException("No valid API credentials provided. Key/Secret/PassPhrase needed.");
 			var uriString = uri.ToString();
 
-			var now = DateTime.Now;
-			var time = TimeZoneInfo.ConvertTimeToUtc(now).ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
+			var time = TimeZoneInfo.ConvertTimeToUtc(DateTime.Now).ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
 			var signtext = time + method.Method.ToUpper() + uriString.Replace("https://www.okx.com", "").Trim('?');
 
 			if (method == HttpMethod.Post)
@@ -61,7 +60,7 @@ namespace Okex.Net.CoreObjects
 				}
 				else
 				{
-					var bodyString = JsonConvert.SerializeObject(parameters.OrderBy(p => p.Key).ToDictionary(p => p.Key, p => p.Value));
+					var bodyString = JsonConvert.SerializeObject(parameters.ToDictionary(p => p.Key, p => p.Value));
 					signtext += bodyString;
 				}
 			}
