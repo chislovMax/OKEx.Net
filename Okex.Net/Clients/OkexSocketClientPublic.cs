@@ -121,7 +121,6 @@ namespace Okex.Net.Clients
 			SubscribeToChannels(okexChannels.ToArray());
 		}
 
-
 		public void UnsubscribeBookPriceChannel(string instrumentName, string orderBookType)
 		{
 			var orderBookChannel = GetOrderBookChannel(instrumentName, orderBookType);
@@ -276,13 +275,13 @@ namespace Okex.Net.Clients
 
 		private OkexChannel GetFundingRateChannel(string instrumentName)
 		{
-			const string channelName = "funding-rate";
+			var channelName = $"funding-rate{instrumentName}";
 			if (SubscribedChannels.TryGetValue(channelName, out var channel))
 			{
 				return channel;
 			}
 
-			var channelArgs = new Dictionary<string, string> { { "channel", channelName }, { "instId", instrumentName } };
+			var channelArgs = new Dictionary<string, string> { { "channel", "funding-rate" }, { "instId", instrumentName } };
 			return new OkexChannel(channelName, channelArgs);
 		}
 
