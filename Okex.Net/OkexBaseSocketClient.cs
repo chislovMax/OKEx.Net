@@ -140,7 +140,6 @@ namespace Okex.Net
 				_ws.OnOpen -= OnSocketOpened;
 				_ws.OnClose -= OnSocketClosed;
 				_ws.OnMessage -= OnSocketGetMessage;
-
 				CreateSocket();
 				ws.Dispose();
 
@@ -330,15 +329,12 @@ namespace Okex.Net
 		protected virtual void OnSocketOpened()
 		{
 			_logger.LogTrace($"Socket ({Name}) {Id} is open (IsOpen: {_ws.IsOpen})");
-			if (_credential is null)
-			{
-				SendSubscribeToChannels(SubscribedChannels.Values.ToArray());
-			}
-			else
+			if (_credential != null)
 			{
 				Auth();
 			}
 
+			SendSubscribeToChannels(SubscribedChannels.Values.ToArray());
 			_lastConnectTime = DateTime.Now;
 		}
 

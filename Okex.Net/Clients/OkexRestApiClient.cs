@@ -54,7 +54,7 @@ namespace Okex.Net.Clients
 
 		#region Override
 
-		protected override TimeSyncInfo GetTimeSyncInfo() => _timeSyncInfo;
+		public override TimeSyncInfo GetTimeSyncInfo() => _timeSyncInfo;
 
 		public override TimeSpan GetTimeOffset()
 		{
