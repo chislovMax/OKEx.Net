@@ -257,9 +257,11 @@ namespace Okex.Net
 			}
 		}
 
+		public string Message { get; set; }
 		private void ProcessMessage(string message)
 		{
 			LastMessageDate = DateTime.Now;
+			Message = message;
 			var response = JsonConvert.DeserializeObject<OkexSocketResponse>(message);
 			if (string.IsNullOrWhiteSpace(response.Event))
 			{
@@ -323,13 +325,17 @@ namespace Okex.Net
 
 		private void ProcessLogin(OkexSocketResponse response)
 		{
-			SubscribeToChannels();
+			SendSubscribeToChannels(SubscribedChannels.Values.ToArray());
 		}
 
 		protected virtual void OnSocketOpened()
 		{
 			_logger.LogTrace($"Socket ({Name}) {Id} is open (IsOpen: {_ws.IsOpen})");
-			if (_credential != null)
+			if (_credential is null)
+			{
+				SendSubscribeToChannels(SubscribedChannels.Values.ToArray());
+			}
+			else
 			{
 				Auth();
 			}
