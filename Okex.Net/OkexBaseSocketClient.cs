@@ -257,11 +257,9 @@ namespace Okex.Net
 			}
 		}
 
-		public string Message { get; set; }
 		private void ProcessMessage(string message)
 		{
 			LastMessageDate = DateTime.Now;
-			Message = message;
 			var response = JsonConvert.DeserializeObject<OkexSocketResponse>(message);
 			if (string.IsNullOrWhiteSpace(response.Event))
 			{
