@@ -338,7 +338,6 @@ namespace Okex.Net
 				Auth();
 			}
 
-			SendSubscribeToChannels(SubscribedChannels.Values.ToArray());
 			_lastConnectTime = DateTime.Now;
 		}
 
