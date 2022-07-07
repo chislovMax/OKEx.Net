@@ -140,7 +140,6 @@ namespace Okex.Net
 				_ws.OnOpen -= OnSocketOpened;
 				_ws.OnClose -= OnSocketClosed;
 				_ws.OnMessage -= OnSocketGetMessage;
-
 				CreateSocket();
 				ws.Dispose();
 
@@ -324,7 +323,7 @@ namespace Okex.Net
 
 		private void ProcessLogin(OkexSocketResponse response)
 		{
-			SubscribeToChannels();
+			SendSubscribeToChannels(SubscribedChannels.Values.ToArray());
 		}
 
 		protected virtual void OnSocketOpened()

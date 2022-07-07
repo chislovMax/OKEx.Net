@@ -2,15 +2,12 @@ using CryptoExchange.Net;
 using CryptoExchange.Net.Authentication;
 using CryptoExchange.Net.Objects;
 using Newtonsoft.Json;
-using Okex.Net.Helpers;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Security;
-using System.Security.Cryptography;
-using System.Text;
+using Okex.Net.Helpers;
 
 namespace Okex.Net.CoreObjects
 {
@@ -42,7 +39,7 @@ namespace Okex.Net.CoreObjects
 				? new SortedDictionary<string, object>(parameters)
 				: new SortedDictionary<string, object>();
 
-			headers = new Dictionary<string, string>() ;
+			headers = new Dictionary<string, string>();
 
 			if (!signed && !_signPublicRequests)
 				return;
@@ -50,7 +47,8 @@ namespace Okex.Net.CoreObjects
 			if (Credentials?.Key == null || _passPhrase == null)
 				throw new ArgumentException("No valid API credentials provided. Key/Secret/PassPhrase needed.");
 			var uriString = uri.ToString();
-			var time = (DateTime.UtcNow.ToUnixTimeMilliSeconds() / 1000.0m).ToString(CultureInfo.InvariantCulture);
+
+			var time = TimeZoneInfo.ConvertTimeToUtc(DateTime.Now).ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
 			var signtext = time + method.Method.ToUpper() + uriString.Replace("https://www.okx.com", "").Trim('?');
 
 			if (method == HttpMethod.Post)
@@ -62,12 +60,12 @@ namespace Okex.Net.CoreObjects
 				}
 				else
 				{
-					var bodyString = JsonConvert.SerializeObject(parameters.OrderBy(p => p.Key).ToDictionary(p => p.Key, p => p.Value));
+					var bodyString = JsonConvert.SerializeObject(parameters.ToDictionary(p => p.Key, p => p.Value));
 					signtext += bodyString;
 				}
 			}
 
-			var signature = HmacSHA256(signtext, Credentials.Secret?.GetString());
+			var signature = Encryptor.HmacSHA256(signtext, Credentials.Secret.GetString());
 
 			headers.Add("OK-ACCESS-KEY", Credentials.Key.GetString());
 			headers.Add("OK-ACCESS-SIGN", signature);
@@ -78,17 +76,6 @@ namespace Okex.Net.CoreObjects
 		public static string Base64Encode(byte[] plainBytes)
 		{
 			return System.Convert.ToBase64String(plainBytes);
-		}
-
-		public string HmacSHA256(string infoStr, string secret)
-		{
-			byte[] sha256Data = Encoding.UTF8.GetBytes(infoStr);
-			byte[] secretData = Encoding.UTF8.GetBytes(secret);
-			using (var hmacsha256 = new HMACSHA256(secretData))
-			{
-				byte[] buffer = hmacsha256.ComputeHash(sha256Data);
-				return Convert.ToBase64String(buffer);
-			}
 		}
 	}
 }

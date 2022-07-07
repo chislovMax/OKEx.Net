@@ -11,7 +11,7 @@ namespace Okex.Net.Models
 		[JsonProperty("fundingRate")]
 		public decimal FundingRate { get; set; }
 		[JsonProperty("nextFundingRate")]
-		public decimal PredictedFundingRate { get; set; }
+		public decimal? PredictedFundingRate { get; set; }
 		[JsonProperty("fundingTime")]
 		public long FundingTime { get; set; }
 		[JsonProperty("nextFundingTime")]

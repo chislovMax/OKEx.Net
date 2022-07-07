@@ -28,7 +28,7 @@ namespace Okex.Net.Clients
 
 		private OkexAuthenticationProvider _provider;
 
-		#region V5 EndPoints
+		#region EndPoints
 
 		private const string Endpoints_Currencies = "api/v5/asset/currencies";
 		private const string Endpoints_Instruments = "api/v5/public/instruments";
@@ -49,12 +49,13 @@ namespace Okex.Net.Clients
 		private const string Endpoints_FundingRate = "api/v5/public/funding-rate";
 		private const string Endpoints_FundingRateHistory = "api/v5/public/funding-rate-history";
 		private const string Endpoints_CandleStickList = "api/v5/market/candles";
+		private const string Endpoints_TradeFee = "api/v5/account/trade-fee";
 
 		#endregion
 
 		#region Override
 
-		protected override TimeSyncInfo GetTimeSyncInfo() => _timeSyncInfo;
+		public override TimeSyncInfo GetTimeSyncInfo() => _timeSyncInfo;
 
 		public override TimeSpan GetTimeOffset()
 		{
@@ -426,7 +427,6 @@ namespace Okex.Net.Clients
 			return SendRequestAsync<OkexApiResponse<OkexSystemStatus>>(GetUrl(Endpoints_Status), HttpMethod.Get, ct, okexParams);
 		}
 
-
 		public Task<WebCallResult<OkexApiResponse<OkexBorrowInfo>>> GetBorrowInfoAsync(string? currency, CancellationToken ct = default)
 		{
 			var parameters = new Dictionary<string, object?>();
@@ -532,6 +532,25 @@ namespace Okex.Net.Clients
 			return SendRequestAsync<OkexApiResponse<OkexCandleStick>>(GetUrl(Endpoints_CandleStickList), HttpMethod.Get, ct, parameters);
 		}
 
+
+		public Task<WebCallResult<OkexApiResponse<OkexTradeFee>>> GetTradeFeeAsync(OkexInstrumentTypeEnum instrumentType,
+			string? instrumentId = null, string? uly = null, CancellationToken ct = default)
+		{
+			var parameters = new Dictionary<string, object> { { "instType", instrumentType } };
+
+			if (!string.IsNullOrWhiteSpace(instrumentId))
+			{
+				parameters.Add("instId", instrumentId!);
+			}
+
+			if (!string.IsNullOrWhiteSpace(uly))
+			{
+				parameters.Add("uly", uly!);
+			}
+
+			return SendRequestAsync<OkexApiResponse<OkexTradeFee>>(GetUrl(Endpoints_TradeFee), HttpMethod.Get, ct, parameters, true);
+		}
+
 		#endregion
 
 		private Uri GetUrl(string endpoint, string param = "")
@@ -548,7 +567,6 @@ namespace Okex.Net.Clients
 		{
 			return _baseClient.SendRequestAsync<T>(this, uri, method, cancellationToken, parameters, signed, useProd: useProd);
 		}
-
 
 		public new void Dispose()
 		{
