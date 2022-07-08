@@ -372,7 +372,7 @@ namespace Okex.Net.Clients
 				throw new ArgumentException("Passed an empty array");
 			}
 
-			var instruments = instrumentsName.Aggregate((x, y) => $"{x},{y}");
+			var instruments = instrumentsName.Aggregate((x, y) => $"{x},{y}"); //TODO string join
 			var okexParams = new Dictionary<string, object> { { "instId", instruments }, { "tdMode", tradeMode } };
 			if (!string.IsNullOrWhiteSpace(currency))
 			{
