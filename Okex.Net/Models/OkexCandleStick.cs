@@ -1,24 +1,14 @@
-﻿using CryptoExchange.Net.Converters;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 
 namespace Okex.Net.Models
 {
-	[JsonConverter(typeof(ArrayConverter))]
-	public class OkexCandleStick : AbstractOkexModel
+	public class OkexCandleStick
 	{
-		[ArrayProperty(0)]
-		public long Timestamp { get; set; }
-		[ArrayProperty(1)]
-		public decimal Open { get; set; }
-		[ArrayProperty(2)]
-		public decimal High { get; set; }
-		[ArrayProperty(3)]
-		public decimal Low { get; set; }
-		[ArrayProperty(4)]
-		public decimal Close { get; set; }
-		[ArrayProperty(5)]
-		public decimal Volume { get; set; }
-		[ArrayProperty(6)]
-		public decimal VolumeCurrency { get; set; }
+		[JsonProperty("candle")] 
+		public OkexCandleStickEntry Candle { get; set; } = new OkexCandleStickEntry();
+		[JsonProperty("instId")]
+		public string InstrumentName { get; set; } = string.Empty;
+		[JsonProperty("timeFrame")]
+		public string TimeFrame { get; set; } = string.Empty;
 	}
 }

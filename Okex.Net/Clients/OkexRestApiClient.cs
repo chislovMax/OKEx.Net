@@ -504,7 +504,7 @@ namespace Okex.Net.Clients
 			return SendRequestAsync<OkexApiResponse<OkexFundingRateHistory>>(GetUrl(Endpoints_FundingRateHistory), HttpMethod.Get, ct, parameters);
 		}
 
-		public Task<WebCallResult<OkexApiResponse<OkexCandleStick>>> GetCandleStickListAsync(string instrumentName, string? timeFrame, long? since = null, long? until = null,
+		public Task<WebCallResult<OkexApiResponse<OkexCandleStickEntry>>> GetCandleStickListAsync(string instrumentName, string? timeFrame, long? since = null, long? until = null,
 			int? limit = null, CancellationToken ct = default)
 		{
 			if (string.IsNullOrWhiteSpace(instrumentName))
@@ -529,7 +529,7 @@ namespace Okex.Net.Clients
 				parameters.Add("limit", limit);
 			}
 
-			return SendRequestAsync<OkexApiResponse<OkexCandleStick>>(GetUrl(Endpoints_CandleStickList), HttpMethod.Get, ct, parameters);
+			return SendRequestAsync<OkexApiResponse<OkexCandleStickEntry>>(GetUrl(Endpoints_CandleStickList), HttpMethod.Get, ct, parameters);
 		}
 
 

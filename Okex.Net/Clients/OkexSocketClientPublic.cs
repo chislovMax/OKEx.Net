@@ -246,13 +246,20 @@ namespace Okex.Net.Clients
 		private void ProcessCandle(OkexSocketResponse response)
 		{
 			var data = response.Data?.FirstOrDefault();
-			var candleStick = data?.ToObject<OkexCandleStick>();
-			if (candleStick is null)
+			var candleStick = data?.ToObject<OkexCandleStickEntry>();
+			var instrument = response.Argument["instId"]?.Value<string>();
+			var timeFrame = response.Argument["channel"]?.Value<string>()?.Replace("candle", "");
+			if (candleStick is null || string.IsNullOrWhiteSpace(instrument) || string.IsNullOrWhiteSpace(timeFrame))
 			{
 				return;
 			}
 
-			CandleUpdate.Invoke(candleStick);
+			CandleUpdate.Invoke(new OkexCandleStick
+			{
+				Candle = candleStick,
+				InstrumentName = instrument,
+				TimeFrame = timeFrame,
+			});
 		}
 
 		#endregion
