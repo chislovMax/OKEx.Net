@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using CryptoExchange.Net;
@@ -372,8 +373,8 @@ namespace Okex.Net.Clients
 				throw new ArgumentException("Passed an empty array");
 			}
 
-			var instruments = instrumentsName.Aggregate((x, y) => $"{x},{y}"); //TODO string join
-			var okexParams = new Dictionary<string, object> { { "instId", instruments }, { "tdMode", tradeMode } };
+			var names = string.Join(",", instrumentsName);
+			var okexParams = new Dictionary<string, object> { { "instId", names }, { "tdMode", tradeMode } };
 			if (!string.IsNullOrWhiteSpace(currency))
 			{
 				okexParams.Add("ccy", currency);
