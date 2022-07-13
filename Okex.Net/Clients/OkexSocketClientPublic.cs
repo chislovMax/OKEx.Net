@@ -15,7 +15,30 @@ namespace Okex.Net.Clients
 		public OkexSocketClientPublic(ILogger logger, OkexApiConfig clientConfig)
 			: base(logger, clientConfig, clientConfig.WSUrlPublic)
 		{
+			#region Candles
+			
+			AddChannelHandler(OkexChannelTypeEnum.Candle1m, ProcessCandle);
+			AddChannelHandler(OkexChannelTypeEnum.Candle3m, ProcessCandle);
+			AddChannelHandler(OkexChannelTypeEnum.Candle5m, ProcessCandle);
+			AddChannelHandler(OkexChannelTypeEnum.Candle15m, ProcessCandle);
+			AddChannelHandler(OkexChannelTypeEnum.Candle30m, ProcessCandle);
 			AddChannelHandler(OkexChannelTypeEnum.Candle1H, ProcessCandle);
+			AddChannelHandler(OkexChannelTypeEnum.Candle2H, ProcessCandle);
+			AddChannelHandler(OkexChannelTypeEnum.Candle4H, ProcessCandle);
+			AddChannelHandler(OkexChannelTypeEnum.Candle6H, ProcessCandle);
+			AddChannelHandler(OkexChannelTypeEnum.Candle12H, ProcessCandle);
+			AddChannelHandler(OkexChannelTypeEnum.Candle1D, ProcessCandle);
+			AddChannelHandler(OkexChannelTypeEnum.Candle2D, ProcessCandle);
+			AddChannelHandler(OkexChannelTypeEnum.Candle3D, ProcessCandle);
+			AddChannelHandler(OkexChannelTypeEnum.Candle5D, ProcessCandle);
+			AddChannelHandler(OkexChannelTypeEnum.Candle1W, ProcessCandle);
+			AddChannelHandler(OkexChannelTypeEnum.Candle1M, ProcessCandle);
+			AddChannelHandler(OkexChannelTypeEnum.Candle3M, ProcessCandle);
+			AddChannelHandler(OkexChannelTypeEnum.Candle6M, ProcessCandle);
+			AddChannelHandler(OkexChannelTypeEnum.Candle1Y, ProcessCandle);
+
+			#endregion
+
 			AddChannelHandler(OkexChannelTypeEnum.OrderBook, ProcessOrderBook);
 			AddChannelHandler(OkexChannelTypeEnum.Ticker, ProcessTicker);
 			AddChannelHandler(OkexChannelTypeEnum.MarkPrice, ProcessMarkPrice);
@@ -32,7 +55,30 @@ namespace Okex.Net.Clients
 
 		protected override Dictionary<string, OkexChannelTypeEnum> ChannelTypes { get; set; } = new Dictionary<string, OkexChannelTypeEnum>
 		{
+			#region Candles
+
+			{"candle1m", OkexChannelTypeEnum.Candle1m},
+			{"candle3m", OkexChannelTypeEnum.Candle3m},
+			{"candle5m", OkexChannelTypeEnum.Candle5m},
+			{"candle15m", OkexChannelTypeEnum.Candle15m},
+			{"candle30m", OkexChannelTypeEnum.Candle30m},
 			{"candle1H", OkexChannelTypeEnum.Candle1H},
+			{"candle2H", OkexChannelTypeEnum.Candle2H},
+			{"candle4H", OkexChannelTypeEnum.Candle4H},
+			{"candle6H", OkexChannelTypeEnum.Candle6H},
+			{"candle12H", OkexChannelTypeEnum.Candle12H},
+			{"candle1D", OkexChannelTypeEnum.Candle1D},
+			{"candle2D", OkexChannelTypeEnum.Candle2D},
+			{"candle3D", OkexChannelTypeEnum.Candle3D},
+			{"candle5D", OkexChannelTypeEnum.Candle5D},
+			{"candle1W", OkexChannelTypeEnum.Candle1W},
+			{"candle1M", OkexChannelTypeEnum.Candle1M},
+			{"candle3M", OkexChannelTypeEnum.Candle3M},
+			{"candle6M", OkexChannelTypeEnum.Candle6M},
+			{"candle1Y", OkexChannelTypeEnum.Candle1Y},
+
+			#endregion
+
 			{"books5", OkexChannelTypeEnum.OrderBook},
 			{"tickers", OkexChannelTypeEnum.Ticker},
 			{"mark-price", OkexChannelTypeEnum.MarkPrice},
