@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using CryptoExchange.Net;
@@ -364,13 +366,16 @@ namespace Okex.Net.Clients
 				signed: true);
 		}
 
-		public Task<WebCallResult<OkexApiResponse<AmountMaxSizeInfo>>> GetAmountMaxSizeAsync(string instrumentName,
+		public Task<WebCallResult<OkexApiResponse<OkexMaxSizeAmountInfo>>> GetMaxSizeAmountAsync(string[] instrumentsName,
 			OkexTradeModeEnum tradeMode, string currency = "", decimal? price = null, decimal? leverage = null, CancellationToken ct = default)
 		{
-			if (string.IsNullOrWhiteSpace(instrumentName))
-				throw new ArgumentException("Instrument name must not be null or empty");
+			if (instrumentsName.Length == 0)
+			{
+				throw new ArgumentException("Passed an empty array");
+			}
 
-			var okexParams = new Dictionary<string, object> { { "instId", instrumentName }, { "tdMode", tradeMode } };
+			var names = string.Join(",", instrumentsName);
+			var okexParams = new Dictionary<string, object> { { "instId", names }, { "tdMode", tradeMode } };
 			if (!string.IsNullOrWhiteSpace(currency))
 			{
 				okexParams.Add("ccy", currency);
@@ -386,17 +391,20 @@ namespace Okex.Net.Clients
 				okexParams.Add("leverage", leverage);
 			}
 
-			return SendRequestAsync<OkexApiResponse<AmountMaxSizeInfo>>(GetUrl(Endpoints_MaxSizeAmount), HttpMethod.Get, ct, okexParams,
+			return SendRequestAsync<OkexApiResponse<OkexMaxSizeAmountInfo>>(GetUrl(Endpoints_MaxSizeAmount), HttpMethod.Get, ct, okexParams,
 				signed: true);
 		}
 
-		public Task<WebCallResult<OkexApiResponse<AvailableMaxSizeInfo>>> GetAvailableAmountMaxSizeAsync(string instrumentName,
+		public Task<WebCallResult<OkexApiResponse<OkexAvailableMaxSizeInfo>>> GetAvailableAmountMaxSizeAsync(string[] instrumentsName,
 			OkexTradeModeEnum tradeMode, string currency = "", decimal? price = null, decimal? leverage = null, CancellationToken ct = default)
 		{
-			if (string.IsNullOrWhiteSpace(instrumentName))
-				throw new ArgumentException("Instrument name must not be null or empty");
+			if (instrumentsName.Length == 0)
+			{
+				throw new ArgumentException("Passed an empty array");
+			}
 
-			var okexParams = new Dictionary<string, object> { { "instId", instrumentName }, { "tdMode", tradeMode } };
+			var instruments = instrumentsName.Aggregate((x, y) => $"{x},{y}");
+			var okexParams = new Dictionary<string, object> { { "instId", instruments }, { "tdMode", tradeMode } };
 			if (!string.IsNullOrWhiteSpace(currency))
 			{
 				okexParams.Add("ccy", currency);
@@ -412,7 +420,7 @@ namespace Okex.Net.Clients
 				okexParams.Add("leverage", leverage);
 			}
 
-			return SendRequestAsync<OkexApiResponse<AvailableMaxSizeInfo>>(GetUrl(Endpoints_AvailableMaxSizeAmount), HttpMethod.Get, ct, okexParams,
+			return SendRequestAsync<OkexApiResponse<OkexAvailableMaxSizeInfo>>(GetUrl(Endpoints_AvailableMaxSizeAmount), HttpMethod.Get, ct, okexParams,
 				signed: true);
 		}
 
