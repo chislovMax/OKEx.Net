@@ -170,19 +170,26 @@ namespace Okex.Net.Clients
 			SubscribeToChannels(okexChannels.ToArray());
 		}
 
-		public void SubscribeToCandleSticks(string timeFrame, params string[] instrumentNames)
+		public void SubscribeToCandleSticks(Dictionary<string, string[]> candleStickDict)
 		{
-			var okexChannels = new List<OkexChannel>(instrumentNames.Length);
-			foreach (var name in instrumentNames)
-			{
-				if (string.IsNullOrWhiteSpace(name))
-					throw new ArgumentException("Instrument name must not be null or empty", name);
+			var capacity = candleStickDict.Values.Sum(x => x.Length);
+			var okexChannels = new List<OkexChannel>(capacity);
 
-				okexChannels.Add(GetCandleSticksChannel(name, timeFrame));
+			foreach (var value in candleStickDict)
+			{
+				var instrumentName = value.Key;
+				var timeFrames = value.Value;
+				if (string.IsNullOrWhiteSpace(instrumentName))
+					throw new ArgumentException("Instrument name must not be null or empty", instrumentName);
+				if (timeFrames.Length == 0)
+					throw new ArgumentException("Time frames must not be empty", instrumentName);
+
+				okexChannels.AddRange(timeFrames.Select(timeFrame => GetCandleSticksChannel(instrumentName, timeFrame)));
 			}
 
 			SubscribeToChannels(okexChannels.ToArray());
 		}
+
 		public void UnsubscribeBookPriceChannel(string instrumentName, string orderBookType)
 		{
 			var orderBookChannel = GetOrderBookChannel(instrumentName, orderBookType);
@@ -213,10 +220,24 @@ namespace Okex.Net.Clients
 			UnsubscribeChannel(fundingRateChannel);
 		}
 
-		public void UnsubscribeToCandleStickChannel(string timeFrame, string instrumentName)
+		public void UnsubscribeToCandleStickChannels(Dictionary<string, string[]> candleStickDict)
 		{
-			var candleStickChannel = GetCandleSticksChannel(instrumentName, timeFrame);
-			UnsubscribeChannel(candleStickChannel);
+			var capacity = candleStickDict.Values.Sum(x => x.Length);
+			var okexChannels = new List<OkexChannel>(capacity);
+
+			foreach (var value in candleStickDict)
+			{
+				var instrumentName = value.Key;
+				var timeFrames = value.Value;
+				if (string.IsNullOrWhiteSpace(instrumentName) )
+					throw new ArgumentException("Instrument name must not be null or empty", instrumentName);
+				if (timeFrames.Length == 0)
+					throw new ArgumentException("Time frames must not be empty", instrumentName);
+
+				okexChannels.AddRange(timeFrames.Select(timeFrame => GetCandleSticksChannel(instrumentName, timeFrame)));
+			}
+
+			UnsubscribeToChannels(okexChannels.ToArray());
 		}
 
 		#endregion
