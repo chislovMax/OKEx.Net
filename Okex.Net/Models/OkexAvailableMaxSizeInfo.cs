@@ -2,7 +2,7 @@ using Newtonsoft.Json;
 
 namespace Okex.Net.Models
 {
-	public class AmountMaxSizeInfo : AbstractOkexModel
+	public class OkexAvailableMaxSizeInfo : AbstractOkexModel
 	{
 		[JsonProperty("instId")]
 		public string InstrumentId { get; set; }
@@ -10,10 +10,10 @@ namespace Okex.Net.Models
 		[JsonProperty("ccy")]
 		public string Currency { get; set; }
 
-		[JsonProperty("maxBuy")]
+		[JsonProperty("availBuy")]
 		public decimal MaxBuy { get; set; }
 
-		[JsonProperty("maxSell")]
+		[JsonProperty("availSell")]
 		public decimal MaxSell { get; set; }
 	}
 }

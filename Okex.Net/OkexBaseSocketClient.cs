@@ -217,11 +217,38 @@ namespace Okex.Net
 			}
 		}
 
+		protected void UnsubscribeToChannels(params OkexChannel[] channels)
+		{
+			RemoveСacheChannels(channels);
+			SendUnsubscribeToChannels(channels);
+		}
+
 		protected void UnsubscribeChannel(OkexChannel channel)
 		{
 			var request = new OkexSocketRequest("unsubscribe", channel.Params);
 			Send(request);
 			SubscribedChannels.Remove(channel.ChannelName);
+		}
+
+		private void RemoveСacheChannels(params OkexChannel[] channels)
+		{
+			foreach (var channel in channels)
+			{
+				SubscribedChannels.Remove(channel.ChannelName);
+			}
+		}
+
+		private void SendUnsubscribeToChannels(params OkexChannel[] channels)
+		{
+			var chunks = channels.Chunk(ChunkSize).ToArray();
+			if (!chunks.Any())
+			{
+				return;
+			}
+			foreach (var chunk in chunks)
+			{
+				Send(new OkexSocketRequest("unsubscribe", chunk.Select(x => x.Params).ToArray()));
+			}
 		}
 
 		private void Send(object request)
