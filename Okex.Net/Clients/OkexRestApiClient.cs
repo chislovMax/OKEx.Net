@@ -166,7 +166,8 @@ namespace Okex.Net.Clients
 				parameters.Add("reduceOnly", orderParams.ReduceOnly.Value);
 			}
 
-			if (orderParams.OrderType == OkexOrderTypeEnum.market && orderParams.InstrumentType == OkexInstrumentTypeEnum.SPOT)
+			if ((orderParams.OrderType == OkexOrderTypeEnum.market || orderParams.OrderType == OkexOrderTypeEnum.market_side)
+             && orderParams.InstrumentType == OkexInstrumentTypeEnum.SPOT)
 			{
 				parameters.Add("tgtCcy", orderParams.QuantityType.Value.ToString());
 			}
