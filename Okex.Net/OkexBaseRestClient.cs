@@ -18,9 +18,9 @@ namespace Okex.Net
 {
 	public class OkexBaseRestClient : BaseRestClient, IDisposable
 	{
-		public OkexBaseRestClient(BaseRestClientOptions options, OkexRestApiClientOptions okexRestApiOptions) : base("OKEX", options)
+		public OkexBaseRestClient(BaseRestClientOptions options, OkexRestApiClientOptions okexRestApiOptions, ILogger logger) : base("OKEX", options)
 		{
-			Common = AddApiClient(new OkexRestApiClient(this, options, okexRestApiOptions));
+			Common = AddApiClient(new OkexRestApiClient(this, options, okexRestApiOptions, logger));
 			_isTest = okexRestApiOptions.IsTest;
 		}
 

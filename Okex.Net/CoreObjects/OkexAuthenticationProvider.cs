@@ -7,25 +7,35 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Security;
+using Microsoft.Extensions.Logging;
 using Okex.Net.Helpers;
 
 namespace Okex.Net.CoreObjects
 {
 	public class OkexAuthenticationProvider : AuthenticationProvider
 	{
-		private readonly SecureString? _passPhrase;
-		private readonly bool _signPublicRequests;
+		private const string AccessKeyHeaderName = "OK-ACCESS-KEY";
+		private const string AccessSignHeaderName = "OK-ACCESS-SIGN";
+		private const string AccessTimestampHeaderName = "OK-ACCESS-TIMESTAMP";
+		private const string AccessPassPhraseHeaderName = "OK-ACCESS-PASSPHRASE";
 
-		public OkexAuthenticationProvider(ApiCredentials credentials, SecureString passPhrase, bool signPublicRequests) : base(credentials)
+		private ILogger? _logger;
+		private readonly bool _signPublicRequests;
+		private readonly SecureString? _passPhrase;
+
+		public OkexAuthenticationProvider(ApiCredentials credentials, SecureString passPhrase, bool signPublicRequests, bool isSsl, ILogger? logger = null) : base(credentials)
 		{
 			if (credentials?.Secret == null)
 				throw new ArgumentException("No valid API credentials provided. Key/Secret needed.");
 
+			_logger = logger;
 			_passPhrase = passPhrase;
 			_signPublicRequests = signPublicRequests;
+			_replacementBaseUrl = isSsl ? "https://www.okx.com" : "http://www.okx.com";
 		}
 
 		private readonly string BodyParameterKey = "<BODY>";
+		private readonly string _replacementBaseUrl;
 
 		public override void AuthenticateRequest(RestApiClient apiClient, Uri uri, HttpMethod method, Dictionary<string, object> parameters, bool signed,
 			ArrayParametersSerialization arraySerialization, HttpMethodParameterPosition parameterPosition,
@@ -48,8 +58,13 @@ namespace Okex.Net.CoreObjects
 				throw new ArgumentException("No valid API credentials provided. Key/Secret/PassPhrase needed.");
 			var uriString = uri.ToString();
 
+			var uriStringReplacement = uriString
+				.Replace("http://www.okx.com", "")
+				.Replace("https://www.okx.com", "")
+				.Trim('?');
+
 			var time = TimeZoneInfo.ConvertTimeToUtc(DateTime.Now).ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
-			var signtext = time + method.Method.ToUpper() + uriString.Replace("https://www.okx.com", "").Trim('?');
+			var signtext = time + method.Method.ToUpper() + uriStringReplacement;
 
 			if (method == HttpMethod.Post)
 			{
@@ -65,12 +80,14 @@ namespace Okex.Net.CoreObjects
 				}
 			}
 
+			//_logger?.LogTrace($"\nuriString: {uriString}\nuriStringReplacement: {uriStringReplacement}\nsigntext: {signtext}");
+
 			var signature = Encryptor.HmacSHA256(signtext, Credentials.Secret.GetString());
 
-			headers.Add("OK-ACCESS-KEY", Credentials.Key.GetString());
-			headers.Add("OK-ACCESS-SIGN", signature);
-			headers.Add("OK-ACCESS-TIMESTAMP", time);
-			headers.Add("OK-ACCESS-PASSPHRASE", _passPhrase.GetString());
+			headers.Add(AccessKeyHeaderName, Credentials.Key.GetString());
+			headers.Add(AccessSignHeaderName, signature);
+			headers.Add(AccessTimestampHeaderName, time);
+			headers.Add(AccessPassPhraseHeaderName, _passPhrase.GetString());
 		}
 
 		public static string Base64Encode(byte[] plainBytes)

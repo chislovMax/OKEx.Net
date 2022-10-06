@@ -10,6 +10,7 @@ using CryptoExchange.Net;
 using CryptoExchange.Net.Authentication;
 using CryptoExchange.Net.Logging;
 using CryptoExchange.Net.Objects;
+using Microsoft.Extensions.Logging;
 using Okex.Net.CoreObjects;
 using Okex.Net.Enums;
 using Okex.Net.Models;
@@ -18,12 +19,14 @@ namespace Okex.Net.Clients
 {
 	public class OkexRestApiClient : RestApiClient, IDisposable
 	{
-		public OkexRestApiClient(OkexBaseRestClient baseClient, BaseRestClientOptions options, OkexRestApiClientOptions apiOptions) : base(options, apiOptions)
+		public OkexRestApiClient(OkexBaseRestClient baseClient, BaseRestClientOptions options, OkexRestApiClientOptions apiOptions, ILogger logger) : base(options, apiOptions)
 		{
+			_logger = logger;
 			_baseClient = baseClient;
 			_apiOptions = apiOptions;
 		}
 
+		private readonly ILogger _logger;
 		private readonly OkexBaseRestClient _baseClient;
 		private readonly OkexRestApiClientOptions _apiOptions;
 		private readonly TimeSyncInfo _timeSyncInfo = new TimeSyncInfo(new Log("OKEXRestApiClient"), false, TimeSpan.Zero, new TimeSyncState("OKEXRestApiClient"));
@@ -71,7 +74,7 @@ namespace Okex.Net.Clients
 
 		protected override AuthenticationProvider CreateAuthenticationProvider(ApiCredentials credentials)
 		{
-			_provider = new OkexAuthenticationProvider(_apiOptions.ApiCredentials!, _apiOptions.PassPhrase, _apiOptions.SignPublicRequests);
+			_provider = new OkexAuthenticationProvider(_apiOptions.ApiCredentials!, _apiOptions.PassPhrase, _apiOptions.SignPublicRequests, _apiOptions.IsSsl, _logger);
 			return _provider;
 		}
 

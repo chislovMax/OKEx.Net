@@ -9,8 +9,9 @@ namespace Okex.Net.CoreObjects
 	/// </summary>
 	public class OkexRestApiClientOptions : RestApiClientOptions
 	{
-		public OkexRestApiClientOptions(ApiCredentials credentials, SecureString passPhrase, string url, bool isTest = false) : base(url)
+		public OkexRestApiClientOptions(ApiCredentials credentials, SecureString passPhrase, string url, bool isTest = false, bool isSsl = true) : base(url)
 		{
+			IsSsl = isSsl;
 			IsTest = isTest;
 			ApiCredentials = credentials;
 			PassPhrase = passPhrase;
@@ -20,5 +21,6 @@ namespace Okex.Net.CoreObjects
 
 		public SecureString PassPhrase { get; }
 		public readonly bool IsTest;
+		public readonly bool IsSsl;
 	}
 }
